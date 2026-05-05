@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Intro Skip</title>
+    <script type="module" src="/src/popup.ts"></script>
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup__header">
+        <p class="popup__eyebrow">YouTube Intro Skip</p>
+        <h1 class="popup__title" id="video-title">Loading…</h1>
+      </header>
+
+      <section class="popup__panel popup__panel--stats">
+        <div class="stat">
+          <span class="stat__label">Current timestamp</span>
+          <strong class="stat__value" id="current-time">--:--</strong>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Video duration</span>
+          <strong class="stat__value" id="duration">--:--</strong>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Active rule source</span>
+          <strong class="stat__value" id="active-rule-source">none</strong>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Saved intro end</span>
+          <strong class="stat__value" id="intro-value">Not set</strong>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Saved outro remaining</span>
+          <strong class="stat__value" id="outro-value">Not set</strong>
+        </div>
+      </section>
+
+      <section class="popup__panel popup__panel--actions">
+        <button id="set-intro-button" class="button button--primary" type="button">Set intro end</button>
+        <button id="set-outro-button" class="button button--primary" type="button">Set outro start</button>
+        <button id="clear-video-rule-button" class="button button--secondary" type="button">Clear current video rule</button>
+        <button id="toggle-playlist-form-button" class="button button--secondary" type="button">
+          Apply current rule to playlist
+        </button>
+
+        <div id="playlist-form" class="playlist-form" hidden>
+          <label class="playlist-form__label" for="playlist-url-input">Playlist URL</label>
+          <input
+            id="playlist-url-input"
+            class="playlist-form__input"
+            type="url"
+            placeholder="https://www.youtube.com/playlist?list=..."
+          />
+          <button id="confirm-playlist-button" class="button button--primary" type="button">Save playlist rule</button>
+        </div>
+      </section>
+
+      <p id="status-message" class="status-message" role="status" aria-live="polite">Open a YouTube video page first</p>
+    </main>
+  </body>
+</html>

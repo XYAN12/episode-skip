@@ -1,0 +1,15 @@
+{
+  "name": "youtube-intro-skip",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.292",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.3"
+  }
+}
