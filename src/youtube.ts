@@ -1,17 +1,49 @@
 export type YouTubePageContext = {
   videoId: string | null;
   playlistId: string | null;
+  playlistIndex: string | null;
   channelId: string | null;
   isWatchPage: boolean;
 };
 
-export function getVideoIdFromUrl(url: string): string | null {
+export type WatchPageIdentifiers = {
+  videoId: string | null;
+  playlistId: string | null;
+  index: string | null;
+};
+
+export function isYouTubeWatchUrl(url: string): boolean {
+  return parseYouTubeWatchUrl(url) !== null;
+}
+
+export function parseYouTubeWatchUrl(url: string): WatchPageIdentifiers | null {
   const parsedUrl = tryParseUrl(url);
   if (!parsedUrl || !isYouTubeHost(parsedUrl.hostname) || parsedUrl.pathname !== "/watch") {
     return null;
   }
 
-  return parsedUrl.searchParams.get("v");
+  return {
+    videoId: parsedUrl.searchParams.get("v"),
+    playlistId: parsedUrl.searchParams.get("list"),
+    index: parsedUrl.searchParams.get("index")
+  };
+}
+
+export function getWatchPageIdentifiers(url: string): WatchPageIdentifiers {
+  const identifiers = parseYouTubeWatchUrl(url);
+  if (!identifiers) {
+    return {
+      videoId: null,
+      playlistId: null,
+      index: null
+    };
+  }
+
+  return identifiers;
+}
+
+export function getVideoIdFromUrl(url: string): string | null {
+  return getWatchPageIdentifiers(url).videoId;
 }
 
 export function getPlaylistIdFromUrl(url: string): string | null {
@@ -28,17 +60,18 @@ export function getPlaylistIdFromUrl(url: string): string | null {
 }
 
 export function getPageContext(url: string, documentRef: Document): YouTubePageContext {
+  const identifiers = getWatchPageIdentifiers(url);
   return {
-    videoId: getVideoIdFromUrl(url),
-    playlistId: getPlaylistIdFromUrl(url),
+    videoId: identifiers.videoId,
+    playlistId: identifiers.playlistId,
+    playlistIndex: identifiers.index,
     channelId: getChannelIdFromDocument(documentRef),
     isWatchPage: isWatchPage(url)
   };
 }
 
 export function isWatchPage(url: string): boolean {
-  const parsedUrl = tryParseUrl(url);
-  return Boolean(parsedUrl && isYouTubeHost(parsedUrl.hostname) && parsedUrl.pathname === "/watch");
+  return isYouTubeWatchUrl(url);
 }
 
 export function getChannelIdFromDocument(documentRef: Document): string | null {

@@ -1,8 +1,10 @@
 import { createEmptyRuleStore, type RuleScope, type RuleStore, type SkipRule } from "./rules";
-import { formatPlaylistSavedMessage } from "./popup-state";
+import { formatPlaylistSavedMessage } from "./ui-state";
+import type { FloatingButtonPosition } from "./ui-position";
 import { getPlaylistIdFromUrl } from "./youtube";
 
 const STORAGE_KEY = "ruleStore";
+const FLOATING_BUTTON_POSITION_KEY = "floatingButtonPosition";
 
 type CallbackStorageArea = {
   get: (keys: string | string[] | Record<string, unknown> | null, callback: (items: Record<string, unknown>) => void) => void;
@@ -24,13 +26,40 @@ export type ApplyVideoRuleToPlaylistResult =
     }
   | {
       ok: false;
-      error: "NO_VIDEO_RULE" | "INVALID_PLAYLIST_URL";
+      error: "NO_VIDEO_RULE" | "INVALID_PLAYLIST_URL" | "NO_PLAYLIST_ID";
       message: string;
     };
 
 export async function loadRuleStore(storageArea: StorageAreaLike = chrome.storage.local): Promise<RuleStore> {
   const result = await storageGet(storageArea, STORAGE_KEY);
   return normalizeRuleStore(result[STORAGE_KEY]);
+}
+
+export async function loadFloatingButtonPosition(
+  storageArea: StorageAreaLike = chrome.storage.local
+): Promise<FloatingButtonPosition | null> {
+  const result = await storageGet(storageArea, FLOATING_BUTTON_POSITION_KEY);
+  const value = result[FLOATING_BUTTON_POSITION_KEY];
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<FloatingButtonPosition>;
+  if (!Number.isFinite(candidate.x) || !Number.isFinite(candidate.y)) {
+    return null;
+  }
+
+  return {
+    x: candidate.x,
+    y: candidate.y
+  };
+}
+
+export async function saveFloatingButtonPosition(
+  position: FloatingButtonPosition,
+  storageArea: StorageAreaLike = chrome.storage.local
+): Promise<void> {
+  await storageSet(storageArea, { [FLOATING_BUTTON_POSITION_KEY]: position });
 }
 
 export async function saveRule(
@@ -79,6 +108,22 @@ export async function applyVideoRuleToPlaylist(
       ok: false,
       error: "INVALID_PLAYLIST_URL",
       message: "Invalid playlist URL"
+    };
+  }
+
+  return applyVideoRuleToCurrentPlaylist(videoId, playlistId, storageArea);
+}
+
+export async function applyVideoRuleToCurrentPlaylist(
+  videoId: string,
+  playlistId: string | null,
+  storageArea: StorageAreaLike = chrome.storage.local
+): Promise<ApplyVideoRuleToPlaylistResult> {
+  if (!playlistId) {
+    return {
+      ok: false,
+      error: "NO_PLAYLIST_ID",
+      message: "No playlist detected"
     };
   }
 

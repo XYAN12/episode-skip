@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { applyVideoRuleToPlaylist, clearRule, loadRuleStore, saveRule } from "../src/storage";
+import {
+  applyVideoRuleToCurrentPlaylist,
+  applyVideoRuleToPlaylist,
+  clearRule,
+  loadRuleStore,
+  saveRule
+} from "../src/storage";
 import type { RuleStore } from "../src/rules";
 
 type StorageAreaLike = {
@@ -85,6 +91,40 @@ describe("storage", () => {
       ok: false,
       error: "INVALID_PLAYLIST_URL",
       message: "Invalid playlist URL"
+    });
+  });
+
+  it("copies the current video rule to the current playlist id", async () => {
+    const originalVideoRule = { outroRemainingSeconds: 100, updatedAt: 88 };
+    store.video.abc123 = originalVideoRule;
+
+    const result = await applyVideoRuleToCurrentPlaylist("abc123", "PL123", storageArea);
+
+    expect(result.ok).toBe(true);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.playlist.PL123).toEqual(originalVideoRule);
+    expect(nextStore.video.abc123).toEqual(originalVideoRule);
+    expect(nextStore.playlist.PL123).not.toBe(nextStore.video.abc123);
+  });
+
+  it("returns an error if there is no current video rule for the current playlist flow", async () => {
+    const result = await applyVideoRuleToCurrentPlaylist("missing", "PL123", storageArea);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "NO_VIDEO_RULE",
+      message: "No current video rule to apply"
+    });
+  });
+
+  it("returns an error if there is no playlist id for the current playlist flow", async () => {
+    const result = await applyVideoRuleToCurrentPlaylist("keepVideo", null, storageArea);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "NO_PLAYLIST_ID",
+      message: "No playlist detected"
     });
   });
 });

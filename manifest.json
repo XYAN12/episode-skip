@@ -3,15 +3,15 @@
   "name": "YouTube Intro Skip",
   "version": "0.1.0",
   "description": "Manually save and auto-skip YouTube TV show intros and outros.",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*"],
   "action": {
-    "default_title": "YouTube Intro Skip",
-    "default_popup": "popup.html"
+    "default_title": "YouTube Intro Skip"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/watch*"],
-      "js": ["assets/content.js"],
+      "matches": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*"],
+      "js": ["content.js"],
       "run_at": "document_idle"
     }
   ]

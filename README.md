@@ -2,26 +2,28 @@
 
 YouTube Intro Skip is a Manifest V3 Chrome and Brave extension for saving intro and outro skip rules on YouTube watch pages. It is designed for repeat viewing workflows like TV episodes, where the right skip point is usually stable across a series, a playlist, or a specific upload.
 
-The project keeps skip calculation in pure TypeScript so the browser-facing code stays thin. Content scripts handle page integration, the popup handles operator controls, and storage stays in `chrome.storage.local`.
+The extension now lives entirely inside the YouTube page. A small draggable circular button opens a compact control panel, while the skip engine remains isolated in pure TypeScript so the browser-facing code stays thin and testable.
 
 ## Features
 
 - Auto-skip saved intros and outros on YouTube watch pages
+- Show a draggable circular in-page button instead of covering the player with a large floating panel
+- Open a compact in-page control panel with current video and rule state
 - Save intro end from the current playback timestamp
 - Save outro skip using remaining time instead of an absolute timestamp
-- Show current video metadata and active rule source in the extension popup
-- Apply a current video rule to an entire playlist by pasting a playlist URL
+- Persist the floating button position in `chrome.storage.local`
+- Detect playlist context automatically from the YouTube watch-page `list` query parameter
+- Apply a current video rule to the detected playlist with one click
 - Preserve rule priority across video, playlist, and channel scopes
-- Use content-script messaging instead of an in-page floating overlay
 - Test core logic and storage behavior with Vitest
 
 ## Demo Behavior
 
-On a YouTube episode, open the toolbar popup and click `Set intro end` when the intro finishes. On the same or another episode, the content script detects that playback is still before the saved intro boundary and jumps forward automatically.
+On a YouTube episode, click the circular `Skip` button to open the in-page panel, then click `Set intro end` when the intro finishes. On the same or another episode, the content script detects that playback is still before the saved intro boundary and jumps forward automatically.
 
 For outros, click `Set outro start` once playback enters the credits. The extension stores how much time remained in the video at that point. When later episodes reach the same remaining-time window, the extension skips to the end without assuming every episode has the same total duration.
 
-If you start from a single video rule and decide that the skip point should apply to the whole playlist, use `Apply current rule to playlist` and paste either a playlist URL or a watch URL that includes a `list=` query parameter.
+If the current watch URL includes a `list=` query parameter, the panel detects that playlist automatically. After you save a per-video intro or outro rule, the panel can immediately offer a one-click `Apply to playlist` action for that detected list id.
 
 ## Why Outro Rules Use Remaining Time
 
@@ -48,7 +50,7 @@ npm install
 npm test
 ```
 
-The test suite covers URL parsing, rule priority, intro/outro rule creation, skip targeting, popup state helpers, and `chrome.storage.local`-style persistence behavior.
+The test suite covers URL parsing, rule priority, intro/outro rule creation, skip targeting, in-page UI state helpers, floating button position clamping, and `chrome.storage.local`-style persistence behavior.
 
 ## Building The Extension
 
@@ -64,26 +66,24 @@ The production build is emitted to `dist/`.
 2. Enable Developer mode.
 3. Click `Load unpacked`.
 4. Select the repository’s `dist` directory.
-5. Pin the extension if you want one-click access to the popup while testing.
+5. Refresh any open YouTube watch page after loading or reloading the extension.
 
 ## Project Architecture
 
 - `manifest.json`
-  Manifest V3 definition, popup entrypoint, permissions, and YouTube content-script registration.
+  Manifest V3 definition, permissions, and YouTube content-script registration.
 - `src/content.ts`
-  Runs on YouTube watch pages, reads page state, handles popup messages, persists rules, and performs automatic skipping.
+  Runs on YouTube watch pages, injects the draggable button and panel, persists button position and rules, handles YouTube SPA navigation, and performs automatic skipping.
 - `src/rules.ts`
   Pure rule logic for priority resolution and skip target calculation.
 - `src/storage.ts`
-  `chrome.storage.local` helpers plus playlist-rule copy flow.
+  `chrome.storage.local` helpers for rule persistence, playlist promotion, and saved button position.
 - `src/youtube.ts`
   URL and page-context parsing utilities.
-- `src/messages.ts`
-  Shared message contracts between popup and content script.
-- `src/popup.ts`
-  Popup controller that queries the active tab, sends actions, and renders feedback.
-- `src/popup-state.ts`
-  Pure popup formatting and state helpers.
+- `src/ui-state.ts`
+  Pure formatting and prompt helpers for the in-page control panel.
+- `src/ui-position.ts`
+  Pure helpers for default placement and viewport clamping of the draggable button.
 - `tests/`
   Vitest coverage for the core business logic and storage behavior.
 
@@ -100,31 +100,45 @@ This means a hand-tuned rule for one specific upload always wins, while playlist
 
 ## Playlist Rule Workflow
 
-Playlist rules are now explicit instead of being inferred from whichever page you happened to be watching.
+Playlist rules are explicit, but the main workflow is automatic playlist detection from YouTube watch URLs.
 
-1. Save a per-video intro or outro rule from the popup.
-2. Click `Apply current rule to playlist`.
-3. Paste either:
-   - `https://www.youtube.com/playlist?list=...`
-   - `https://www.youtube.com/watch?v=...&list=...`
-4. Confirm the action.
+1. Save a per-video intro or outro rule from the in-page panel.
+2. If the current watch URL contains `list=...`, the panel shows a one-click `Apply to playlist` prompt.
+3. Confirm the action to copy the current video rule into `RuleStore.playlist[playlistId]`.
 
-The extension copies the current video rule into `RuleStore.playlist[playlistId]` and leaves the original per-video rule untouched.
+The original per-video rule is kept in place, so it still overrides the playlist rule when both exist.
+
+The primary flow is the detected current-playlist workflow driven by the `list` query parameter on standard YouTube watch URLs.
+
+## Manual Testing Checklist
+
+1. Load `dist` as an unpacked extension.
+2. Open a YouTube watch page.
+3. Confirm the circular floating button appears near the lower-right area without covering the main YouTube controls.
+4. Drag the button, refresh the page, and confirm its position persists.
+5. Click the button and confirm the panel opens.
+6. Click outside the panel and confirm it closes.
+7. Press `Escape` while the panel is open and confirm it closes.
+8. Save an intro rule and confirm visible success feedback appears.
+9. Save an outro rule and confirm visible success feedback appears.
+10. Open a playlist-backed watch URL containing `list=...`.
+11. Save a rule and use `Apply to playlist`.
+12. Open another video with the same playlist id and confirm the playlist rule applies.
 
 ## Known Limitations
 
 - The extension only targets standard YouTube watch pages.
 - Channel detection depends on stable channel metadata being present in the page.
-- Channel rules still participate in resolution priority, but the current popup focuses on video and playlist authoring flows.
+- Channel rules still participate in resolution priority, but the current in-page panel focuses on video and playlist authoring flows.
 - Manual backward seeking is handled with a lightweight suppression heuristic, not a full intent model.
 
 ## Future Roadmap
 
-- First-class channel rule editing from the popup
+- First-class channel rule editing from the in-page panel
 - Import and export of saved rules
 - A lightweight options page for browsing and deleting stored rules
 - Better diagnostics for ambiguous or partially loaded YouTube pages
-- End-to-end browser tests around SPA navigation and popup messaging
+- End-to-end browser tests around SPA navigation and drag interactions
 
 ## License
 

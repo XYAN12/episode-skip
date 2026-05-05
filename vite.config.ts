@@ -17,11 +17,11 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        popup: resolve("popup.html"),
         content: resolve("src/content.ts")
       },
       output: {
-        entryFileNames: "assets/[name].js"
+        entryFileNames: "[name].js",
+        chunkFileNames: "chunks/[name]-[hash].js"
       }
     }
   },
