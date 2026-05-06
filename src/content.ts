@@ -37,6 +37,7 @@ const BACKWARD_SEEK_SUPPRESSION_MS = 2000;
 const FEEDBACK_RESET_MS = 1600;
 const UI_ROOT_ID = "youtube-intro-skip-root";
 const UI_STYLE_ID = "youtube-intro-skip-styles";
+const LOGO_ASSET_PATH = "logo/logo.jpg";
 
 type UiElements = {
   root: HTMLDivElement;
@@ -225,12 +226,12 @@ async function ensureUi(): Promise<void> {
   root.id = UI_ROOT_ID;
   root.innerHTML = `
     <button type="button" class="yis-button" aria-label="Open Skipisode panel">
-      <span class="yis-button__mark">${getBrandMarkSvg()}</span>
+      <span class="yis-button__mark">${getLogoImageMarkup("yis-button__logo")}</span>
     </button>
     <section class="yis-panel" hidden aria-label="Skipisode panel">
       <header class="yis-brand">
         <div class="yis-brand__left">
-          <span class="yis-brand__mark">${getBrandMarkSvg()}</span>
+          <span class="yis-brand__mark">${getLogoImageMarkup("yis-brand__logo")}</span>
           <div class="yis-brand__copy">
             <h2 class="yis-brand__title">Skipisode</h2>
             <span class="yis-brand__version">v1.0</span>
@@ -986,6 +987,10 @@ function getFeedbackMessageForPlaylistError(error: "NO_VIDEO_RULE" | "INVALID_PL
   return getText("noPlaylistFound");
 }
 
+function getExtensionAssetUrl(path: string): string {
+  return chrome.runtime.getURL(path);
+}
+
 function injectStyles(): void {
   if (document.getElementById(UI_STYLE_ID)) {
     return;
@@ -1032,10 +1037,15 @@ function injectStyles(): void {
       width: ${FLOATING_BUTTON_SIZE}px;
       height: ${FLOATING_BUTTON_SIZE}px;
       border: none;
-      border-radius: 999px;
-      background: linear-gradient(135deg, #ff5a75 0%, #b253f0 100%);
+      border-radius: 22px;
+      overflow: hidden;
+      padding: 0;
+      background: transparent;
       box-shadow: 0 16px 36px rgba(94, 38, 122, 0.38);
       cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
       transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
     }
 
@@ -1061,6 +1071,15 @@ function injectStyles(): void {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+    }
+
+    #${UI_ROOT_ID} .yis-button__mark {
+      width: 100%;
+      height: 100%;
+      border-radius: 22px;
+      overflow: hidden;
+      background: transparent;
+      flex: none;
     }
 
     #${UI_ROOT_ID} .yis-button__mark svg,
@@ -1122,8 +1141,35 @@ function injectStyles(): void {
       width: 28px;
       height: 28px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #ff5a75 0%, #b253f0 100%);
+      overflow: hidden;
+      background: #ffffff;
       flex: none;
+    }
+
+    #${UI_ROOT_ID} .yis-button__mark,
+    #${UI_ROOT_ID} .yis-brand__mark {
+      overflow: hidden;
+    }
+
+    #${UI_ROOT_ID} .yis-button__logo,
+    #${UI_ROOT_ID} .yis-brand__logo {
+      display: block;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-user-drag: none;
+      object-fit: cover;
+    }
+
+    #${UI_ROOT_ID} .yis-button__logo {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    #${UI_ROOT_ID} .yis-brand__logo {
+      width: 100%;
+      height: 100%;
     }
 
     #${UI_ROOT_ID} .yis-brand__copy {
@@ -1491,14 +1537,8 @@ function injectStyles(): void {
   document.head.appendChild(style);
 }
 
-function getBrandMarkSvg(): string {
-  return `
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M3.5 4.25V11.75L7.25 8L3.5 4.25Z" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round"/>
-      <path d="M9.5 4.5V11.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M11.75 5.5V10.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round"/>
-    </svg>
-  `;
+function getLogoImageMarkup(className: string): string {
+  return `<img class="${className}" src="${getExtensionAssetUrl(LOGO_ASSET_PATH)}" alt="" draggable="false" />`;
 }
 
 function getSparkleSvg(): string {

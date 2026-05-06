@@ -3,11 +3,29 @@
   "name": "Skipisode",
   "version": "0.1.0",
   "description": "Manually save and auto-skip YouTube TV show intros and outros.",
+  "icons": {
+    "16": "logo/icons/icon16.png",
+    "32": "logo/icons/icon32.png",
+    "48": "logo/icons/icon48.png",
+    "128": "logo/icons/icon128.png"
+  },
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*"],
   "action": {
-    "default_title": "Skipisode"
+    "default_title": "Skipisode",
+    "default_icon": {
+      "16": "logo/icons/icon16.png",
+      "32": "logo/icons/icon32.png",
+      "48": "logo/icons/icon48.png",
+      "128": "logo/icons/icon128.png"
+    }
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["logo/logo.jpg", "logo/icons/*.png"],
+      "matches": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*"],

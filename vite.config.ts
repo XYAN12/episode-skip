@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 export default defineConfig({
@@ -9,6 +9,7 @@ export default defineConfig({
       closeBundle() {
         mkdirSync(resolve("dist"), { recursive: true });
         copyFileSync(resolve("manifest.json"), resolve("dist/manifest.json"));
+        cpSync(resolve("logo"), resolve("dist/logo"), { recursive: true });
       }
     }
   ],
