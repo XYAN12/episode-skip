@@ -1,4 +1,5 @@
 import { createRuleFromIntro, createRuleFromOutro, getSkipTarget, resolveRuleWithSource } from "./rules";
+import { isTrustedUserEvent } from "./security";
 import {
   applyVideoRuleToCurrentPlaylist,
   clearRule,
@@ -40,6 +41,7 @@ const UI_STYLE_ID = "youtube-intro-skip-styles";
 const LOGO_ASSET_PATH = "logo/logo.jpg";
 
 type UiElements = {
+  host: HTMLDivElement;
   root: HTMLDivElement;
   button: HTMLButtonElement;
   panel: HTMLDivElement;
@@ -73,6 +75,9 @@ let panelView: PanelView = { kind: "main" };
 let feedbackResetTimer: number | null = null;
 let buttonPosition: FloatingButtonPosition | null = null;
 let currentLocale: UiLocale = "en";
+let globalListenersRegistered = false;
+let navigationListenersRegistered = false;
+let watchPageIntervalId: number | null = null;
 let dragState:
   | {
       pointerId: number;
@@ -158,29 +163,29 @@ void bootstrap();
 
 async function bootstrap(): Promise<void> {
   currentLocale = await loadUiLocale();
-  injectStyles();
-  registerGlobalListeners();
-  await syncPageUi();
-  void applyAutoSkip();
+  registerNavigationListeners();
+  await syncNavigationState();
+}
 
-  setInterval(() => {
+function registerNavigationListeners(): void {
+  if (navigationListenersRegistered) {
+    return;
+  }
+
+  navigationListenersRegistered = true;
+  const handlePossibleNavigation = () => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       resetPanelView();
-      void syncPageUi();
-    } else if (currentState?.isWatchPage) {
-      void refreshPanelState();
+      void syncNavigationState();
     }
+  };
 
-    void applyAutoSkip();
-  }, CHECK_INTERVAL_MS);
+  document.addEventListener("yt-navigate-finish", handlePossibleNavigation as EventListener);
+  window.addEventListener("popstate", handlePossibleNavigation);
 
   const observer = new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      resetPanelView();
-      void syncPageUi();
-    }
+    handlePossibleNavigation();
   });
 
   observer.observe(document.documentElement, {
@@ -190,6 +195,11 @@ async function bootstrap(): Promise<void> {
 }
 
 function registerGlobalListeners(): void {
+  if (globalListenersRegistered) {
+    return;
+  }
+
+  globalListenersRegistered = true;
   document.addEventListener("pointerdown", handleDocumentPointerDown, true);
   document.addEventListener("keydown", handleDocumentKeyDown);
   window.addEventListener("resize", () => {
@@ -201,6 +211,51 @@ function registerGlobalListeners(): void {
     applyButtonPosition(buttonPosition);
     void saveFloatingButtonPosition(buttonPosition);
   });
+}
+
+async function syncNavigationState(): Promise<void> {
+  if (!getContext().isWatchPage) {
+    currentState = null;
+    stopWatchPageInterval();
+    hideUi();
+    return;
+  }
+
+  registerGlobalListeners();
+  await syncPageUi();
+  startWatchPageInterval();
+}
+
+function startWatchPageInterval(): void {
+  if (watchPageIntervalId !== null) {
+    return;
+  }
+
+  watchPageIntervalId = window.setInterval(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      resetPanelView();
+      void syncNavigationState();
+      return;
+    }
+
+    if (!currentState?.isWatchPage) {
+      stopWatchPageInterval();
+      return;
+    }
+
+    void refreshPanelState();
+    void applyAutoSkip();
+  }, CHECK_INTERVAL_MS);
+}
+
+function stopWatchPageInterval(): void {
+  if (watchPageIntervalId === null) {
+    return;
+  }
+
+  window.clearInterval(watchPageIntervalId);
+  watchPageIntervalId = null;
 }
 
 async function syncPageUi(): Promise<void> {
@@ -222,6 +277,8 @@ async function ensureUi(): Promise<void> {
     return;
   }
 
+  const host = document.createElement("div");
+  const shadowRoot = host.attachShadow({ mode: "closed" });
   const root = document.createElement("div");
   root.id = UI_ROOT_ID;
   root.innerHTML = `
@@ -234,7 +291,7 @@ async function ensureUi(): Promise<void> {
           <span class="yis-brand__mark">${getLogoImageMarkup("yis-brand__logo")}</span>
           <div class="yis-brand__copy">
             <h2 class="yis-brand__title">Skipisode</h2>
-            <span class="yis-brand__version">v1.0</span>
+            <span class="yis-brand__version">v0.1.0</span>
           </div>
         </div>
         <button type="button" class="yis-locale" data-action="toggleLocale">
@@ -346,7 +403,9 @@ async function ensureUi(): Promise<void> {
     </section>
   `;
 
-  document.body.appendChild(root);
+  const style = createUiStyleElement();
+  shadowRoot.append(style, root);
+  document.body.appendChild(host);
 
   const button = root.querySelector<HTMLButtonElement>(".yis-button");
   const panel = root.querySelector<HTMLDivElement>(".yis-panel");
@@ -393,11 +452,12 @@ async function ensureUi(): Promise<void> {
     !applyPlaylistButton ||
     !dismissPromptButton
   ) {
-    root.remove();
+    host.remove();
     throw new Error("Failed to create in-page UI");
   }
 
   uiElements = {
+    host,
     root,
     button,
     panel,
@@ -424,22 +484,46 @@ async function ensureUi(): Promise<void> {
 
   button.addEventListener("pointerdown", handleButtonPointerDown);
   button.addEventListener("click", handleButtonClick);
-  localeButton.addEventListener("click", () => {
+  localeButton.addEventListener("click", (event) => {
+    if (!isTrustedUserEvent(event)) {
+      return;
+    }
+
     void toggleLocale();
   });
-  setIntroButton.addEventListener("click", () => {
+  setIntroButton.addEventListener("click", (event) => {
+    if (!isTrustedUserEvent(event)) {
+      return;
+    }
+
     void saveCurrentIntroRule();
   });
-  setOutroButton.addEventListener("click", () => {
+  setOutroButton.addEventListener("click", (event) => {
+    if (!isTrustedUserEvent(event)) {
+      return;
+    }
+
     void saveCurrentOutroRule();
   });
-  clearRuleButton.addEventListener("click", () => {
+  clearRuleButton.addEventListener("click", (event) => {
+    if (!isTrustedUserEvent(event)) {
+      return;
+    }
+
     void clearCurrentVideoRule();
   });
-  applyPlaylistButton.addEventListener("click", () => {
+  applyPlaylistButton.addEventListener("click", (event) => {
+    if (!isTrustedUserEvent(event)) {
+      return;
+    }
+
     void handleConfirmPrimaryAction();
   });
-  dismissPromptButton.addEventListener("click", () => {
+  dismissPromptButton.addEventListener("click", (event) => {
+    if (!isTrustedUserEvent(event)) {
+      return;
+    }
+
     void handleConfirmSecondaryAction();
   });
 
@@ -767,7 +851,7 @@ function renderUi(): void {
 }
 
 function handleButtonClick(event: MouseEvent): void {
-  if (!uiElements || skipNextButtonToggle) {
+  if (!uiElements || !isTrustedUserEvent(event) || skipNextButtonToggle) {
     skipNextButtonToggle = false;
     event.preventDefault();
     return;
@@ -850,12 +934,7 @@ function handleDocumentPointerDown(event: PointerEvent): void {
     return;
   }
 
-  const target = event.target;
-  if (!(target instanceof Node)) {
-    return;
-  }
-
-  if (uiElements.panel.contains(target) || uiElements.button.contains(target)) {
+  if (event.composedPath().includes(uiElements.host)) {
     return;
   }
 
@@ -913,7 +992,7 @@ function showUi(): void {
     return;
   }
 
-  uiElements.root.hidden = false;
+  uiElements.host.hidden = false;
 }
 
 function hideUi(): void {
@@ -921,7 +1000,7 @@ function hideUi(): void {
     return;
   }
 
-  uiElements.root.hidden = true;
+  uiElements.host.hidden = true;
   uiElements.panel.hidden = true;
 }
 
@@ -991,11 +1070,7 @@ function getExtensionAssetUrl(path: string): string {
   return chrome.runtime.getURL(path);
 }
 
-function injectStyles(): void {
-  if (document.getElementById(UI_STYLE_ID)) {
-    return;
-  }
-
+function createUiStyleElement(): HTMLStyleElement {
   const style = document.createElement("style");
   style.id = UI_STYLE_ID;
   style.textContent = `
@@ -1534,7 +1609,7 @@ function injectStyles(): void {
     }
   `;
 
-  document.head.appendChild(style);
+  return style;
 }
 
 function getLogoImageMarkup(className: string): string {
