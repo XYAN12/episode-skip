@@ -5,6 +5,10 @@ import { getPlaylistIdFromUrl } from "./youtube";
 
 const STORAGE_KEY = "ruleStore";
 const FLOATING_BUTTON_POSITION_KEY = "floatingButtonPosition";
+const UI_LOCALE_KEY = "uiLocale";
+const PLAYLIST_SOURCE_VIDEOS_KEY = "playlistSourceVideos";
+
+export type UiLocale = "en" | "zh-CN";
 
 type CallbackStorageArea = {
   get: (keys: string | string[] | Record<string, unknown> | null, callback: (items: Record<string, unknown>) => void) => void;
@@ -62,6 +66,15 @@ export async function saveFloatingButtonPosition(
   await storageSet(storageArea, { [FLOATING_BUTTON_POSITION_KEY]: position });
 }
 
+export async function loadUiLocale(storageArea: StorageAreaLike = chrome.storage.local): Promise<UiLocale> {
+  const result = await storageGet(storageArea, UI_LOCALE_KEY);
+  return normalizeUiLocale(result[UI_LOCALE_KEY]);
+}
+
+export async function saveUiLocale(locale: UiLocale, storageArea: StorageAreaLike = chrome.storage.local): Promise<void> {
+  await storageSet(storageArea, { [UI_LOCALE_KEY]: locale });
+}
+
 export async function saveRule(
   scope: RuleScope,
   key: string,
@@ -108,7 +121,15 @@ export async function clearRule(
     [scope]: nextScope
   };
 
-  await storageSet(storageArea, { [STORAGE_KEY]: nextStore });
+  const itemsToSave: Record<string, unknown> = { [STORAGE_KEY]: nextStore };
+  if (scope === "playlist") {
+    const currentPlaylistSourceVideos = await loadPlaylistSourceVideos(storageArea);
+    const nextPlaylistSourceVideos = { ...currentPlaylistSourceVideos };
+    delete nextPlaylistSourceVideos[key];
+    itemsToSave[PLAYLIST_SOURCE_VIDEOS_KEY] = nextPlaylistSourceVideos;
+  }
+
+  await storageSet(storageArea, itemsToSave);
 }
 
 export async function applyVideoRuleToPlaylist(
@@ -151,7 +172,16 @@ export async function applyVideoRuleToCurrentPlaylist(
     };
   }
 
-  const copiedRule = { ...videoRule };
+  const existingPlaylistRule = currentStore.playlist[playlistId];
+  const copiedRule: SkipRule = {
+    ...existingPlaylistRule,
+    ...videoRule
+  };
+  const playlistSourceVideos = await loadPlaylistSourceVideos(storageArea);
+  const nextPlaylistSourceVideos = {
+    ...playlistSourceVideos,
+    [playlistId]: appendUniqueVideoId(playlistSourceVideos[playlistId], videoId)
+  };
   const nextStore: RuleStore = {
     ...currentStore,
     playlist: {
@@ -160,7 +190,10 @@ export async function applyVideoRuleToCurrentPlaylist(
     }
   };
 
-  await storageSet(storageArea, { [STORAGE_KEY]: nextStore });
+  await storageSet(storageArea, {
+    [STORAGE_KEY]: nextStore,
+    [PLAYLIST_SOURCE_VIDEOS_KEY]: nextPlaylistSourceVideos
+  });
 
   return {
     ok: true,
@@ -168,6 +201,35 @@ export async function applyVideoRuleToCurrentPlaylist(
     rule: copiedRule,
     message: formatPlaylistSavedMessage(playlistId)
   };
+}
+
+export async function clearPlaylistRuleAndSourceVideos(
+  playlistId: string,
+  storageArea: StorageAreaLike = chrome.storage.local
+): Promise<void> {
+  const currentStore = await loadRuleStore(storageArea);
+  const playlistSourceVideos = await loadPlaylistSourceVideos(storageArea);
+  const nextPlaylistScope = { ...currentStore.playlist };
+  delete nextPlaylistScope[playlistId];
+
+  const nextVideoScope = { ...currentStore.video };
+  for (const videoId of playlistSourceVideos[playlistId] ?? []) {
+    delete nextVideoScope[videoId];
+  }
+
+  const nextPlaylistSourceVideos = { ...playlistSourceVideos };
+  delete nextPlaylistSourceVideos[playlistId];
+
+  const nextStore: RuleStore = {
+    ...currentStore,
+    video: nextVideoScope,
+    playlist: nextPlaylistScope
+  };
+
+  await storageSet(storageArea, {
+    [STORAGE_KEY]: nextStore,
+    [PLAYLIST_SOURCE_VIDEOS_KEY]: nextPlaylistSourceVideos
+  });
 }
 
 function normalizeRuleStore(value: unknown): RuleStore {
@@ -190,6 +252,40 @@ function normalizeScope(value: unknown): Record<string, SkipRule> {
   }
 
   return value as Record<string, SkipRule>;
+}
+
+function normalizeUiLocale(value: unknown): UiLocale {
+  return value === "zh-CN" ? "zh-CN" : "en";
+}
+
+async function loadPlaylistSourceVideos(
+  storageArea: StorageAreaLike = chrome.storage.local
+): Promise<Record<string, string[]>> {
+  const result = await storageGet(storageArea, PLAYLIST_SOURCE_VIDEOS_KEY);
+  return normalizePlaylistSourceVideos(result[PLAYLIST_SOURCE_VIDEOS_KEY]);
+}
+
+function normalizePlaylistSourceVideos(value: unknown): Record<string, string[]> {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  return Object.fromEntries(
+    entries.map(([playlistId, videoIds]) => [
+      playlistId,
+      Array.isArray(videoIds) ? videoIds.filter((videoId): videoId is string => typeof videoId === "string") : []
+    ])
+  );
+}
+
+function appendUniqueVideoId(existingVideoIds: string[] | undefined, videoId: string): string[] {
+  const nextVideoIds = existingVideoIds ? [...existingVideoIds] : [];
+  if (!nextVideoIds.includes(videoId)) {
+    nextVideoIds.push(videoId);
+  }
+
+  return nextVideoIds;
 }
 
 function storageGet(storageArea: StorageAreaLike, key: string): Promise<Record<string, unknown>> {

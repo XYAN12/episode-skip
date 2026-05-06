@@ -1,6 +1,6 @@
-# YouTube Intro Skip
+# Skipisode
 
-YouTube Intro Skip is a Manifest V3 Chrome and Brave extension for saving intro and outro skip rules on YouTube watch pages. It is designed for repeat viewing workflows like TV episodes, where the right skip point is usually stable across a series, a playlist, or a specific upload.
+Skipisode is a Manifest V3 Chrome and Brave extension for saving intro and outro skip rules on YouTube watch pages. It is designed for repeat viewing workflows like TV episodes, where the right skip point is usually stable across a series, a playlist, or a specific upload.
 
 The extension now lives entirely inside the YouTube page. A small draggable circular button opens a compact control panel, while the skip engine remains isolated in pure TypeScript so the browser-facing code stays thin and testable.
 

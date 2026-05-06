@@ -4,8 +4,11 @@ import {
   applyVideoRuleToCurrentPlaylist,
   applyVideoRuleToPlaylist,
   clearRule,
+  clearPlaylistRuleAndSourceVideos,
   loadRuleStore,
-  saveRule
+  loadUiLocale,
+  saveRule,
+  saveUiLocale
 } from "../src/storage";
 import type { RuleStore } from "../src/rules";
 
@@ -16,6 +19,7 @@ type StorageAreaLike = {
 
 describe("storage", () => {
   let store: RuleStore;
+  let savedItems: Record<string, unknown>;
   let storageArea: StorageAreaLike;
 
   beforeEach(() => {
@@ -24,11 +28,19 @@ describe("storage", () => {
       playlist: { keepPlaylist: { introEndSeconds: 20, updatedAt: 2 } },
       channel: { keepChannel: { introEndSeconds: 30, updatedAt: 3 } }
     };
+    savedItems = { ruleStore: store };
 
     storageArea = {
-      get: vi.fn(async () => ({ ruleStore: store })),
+      get: vi.fn(async (key?: string | string[] | Record<string, unknown> | null) => {
+        if (typeof key === "string") {
+          return { [key]: savedItems[key] };
+        }
+
+        return { ...savedItems };
+      }),
       set: vi.fn(async (items: Record<string, unknown>) => {
-        store = items.ruleStore as RuleStore;
+        savedItems = { ...savedItems, ...items };
+        store = savedItems.ruleStore as RuleStore;
       })
     };
   });
@@ -105,6 +117,35 @@ describe("storage", () => {
     expect(nextStore.channel.keepChannel?.introEndSeconds).toBe(30);
   });
 
+  it("clearing a playlist rule also clears video rules that were used to build that playlist rule", async () => {
+    savedItems.playlistSourceVideos = {
+      PL123: ["introVideo", "outroVideo"]
+    };
+    store.video.introVideo = { introEndSeconds: 62, updatedAt: 10 };
+    store.video.outroVideo = { outroRemainingSeconds: 2640, updatedAt: 12 };
+    store.video.keepVideo = { introEndSeconds: 10, updatedAt: 1 };
+    store.playlist.PL123 = { introEndSeconds: 62, outroRemainingSeconds: 2640, updatedAt: 12 };
+
+    await clearPlaylistRuleAndSourceVideos("PL123", storageArea);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.playlist.PL123).toBeUndefined();
+    expect(nextStore.video.introVideo).toBeUndefined();
+    expect(nextStore.video.outroVideo).toBeUndefined();
+    expect(nextStore.video.keepVideo).toEqual({ introEndSeconds: 10, updatedAt: 1 });
+    expect((savedItems.playlistSourceVideos as Record<string, string[]>)?.PL123).toBeUndefined();
+  });
+
+  it("loads english as the default UI locale", async () => {
+    expect(await loadUiLocale(storageArea)).toBe("en");
+  });
+
+  it("persists the selected UI locale", async () => {
+    await saveUiLocale("zh-CN", storageArea);
+
+    expect(await loadUiLocale(storageArea)).toBe("zh-CN");
+  });
+
   it("copies the current video rule to a playlist without mutating the original video rule", async () => {
     const originalVideoRule = { introEndSeconds: 95.2, outroRemainingSeconds: 100, updatedAt: 99 };
     store.video.abc123 = originalVideoRule;
@@ -160,6 +201,47 @@ describe("storage", () => {
     expect(nextStore.playlist.PL123).toEqual(originalVideoRule);
     expect(nextStore.video.abc123).toEqual(originalVideoRule);
     expect(nextStore.playlist.PL123).not.toBe(nextStore.video.abc123);
+    expect((savedItems.playlistSourceVideos as Record<string, string[]>)?.PL123).toEqual(["abc123"]);
+  });
+
+  it("applying a video outro to a playlist preserves an existing playlist intro", async () => {
+    store.video.abc123 = { outroRemainingSeconds: 100, updatedAt: 88 };
+    store.playlist.PL123 = { introEndSeconds: 95, updatedAt: 50 };
+    savedItems.playlistSourceVideos = {
+      PL123: ["introVideo"]
+    };
+
+    const result = await applyVideoRuleToCurrentPlaylist("abc123", "PL123", storageArea);
+
+    expect(result.ok).toBe(true);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.playlist.PL123).toEqual({
+      introEndSeconds: 95,
+      outroRemainingSeconds: 100,
+      updatedAt: 88
+    });
+    expect((savedItems.playlistSourceVideos as Record<string, string[]>)?.PL123).toEqual(["introVideo", "abc123"]);
+  });
+
+  it("applying a video intro to a playlist preserves an existing playlist outro", async () => {
+    store.video.abc123 = { introEndSeconds: 95, updatedAt: 88 };
+    store.playlist.PL123 = { outroRemainingSeconds: 100, updatedAt: 50 };
+    savedItems.playlistSourceVideos = {
+      PL123: ["outroVideo"]
+    };
+
+    const result = await applyVideoRuleToCurrentPlaylist("abc123", "PL123", storageArea);
+
+    expect(result.ok).toBe(true);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.playlist.PL123).toEqual({
+      introEndSeconds: 95,
+      outroRemainingSeconds: 100,
+      updatedAt: 88
+    });
+    expect((savedItems.playlistSourceVideos as Record<string, string[]>)?.PL123).toEqual(["outroVideo", "abc123"]);
   });
 
   it("returns an error if there is no current video rule for the current playlist flow", async () => {

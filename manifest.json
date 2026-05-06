@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Intro Skip",
+  "name": "Skipisode",
   "version": "0.1.0",
   "description": "Manually save and auto-skip YouTube TV show intros and outros.",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*"],
   "action": {
-    "default_title": "YouTube Intro Skip"
+    "default_title": "Skipisode"
   },
   "content_scripts": [
     {
