@@ -1,145 +1,150 @@
 # Skipisode
 
-Skipisode is a Manifest V3 Chrome and Brave extension for saving intro and outro skip rules on YouTube watch pages. It is designed for repeat viewing workflows like TV episodes, where the right skip point is usually stable across a series, a playlist, or a specific upload.
+Skipisode is a Manifest V3 Chrome and Brave extension for saving intro and outro skip rules on YouTube watch pages. It is built for repeat-viewing workflows such as TV episodes, where the right skip point is often stable across a single video, a playlist, or a channel.
 
-The extension now lives entirely inside the YouTube page. A small draggable circular button opens a compact control panel, while the skip engine remains isolated in pure TypeScript so the browser-facing code stays thin and testable.
+## Table Of Contents
+
+- [Project Purpose](#project-purpose)
+- [Documentation](#documentation)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Tech Used](#tech-used)
+- [How It Works](#how-it-works)
+- [Rule Priority](#rule-priority)
+- [Testing](#testing)
+- [Known Limitations](#known-limitations)
+- [Roadmap](#roadmap)
+
+## Project Purpose
+
+The project aims to make repeated YouTube episode viewing smoother by letting users save reusable skip points for intros and outros.
+
+It focuses on three practical goals:
+
+- Save intro rules based on the current playback timestamp.
+- Save outro rules based on remaining time, which works better across episodes with different durations.
+- Reuse rules at different scopes so one rule can work for a single video, a playlist, or a broader channel context.
+
+## Documentation
+
+- [Local testing guide](docs/local-testing.md)
+- [Usage guide](docs/how-to-use.md)
+- [使用教程（中文版）](docs/how-to-use.zh-CN.md)
+- [README 中文版](docs/README.zh-CN.md)
 
 ## Features
 
 - Auto-skip saved intros and outros on YouTube watch pages
-- Show a draggable circular in-page button instead of covering the player with a large floating panel
+- Show a draggable circular in-page button instead of a large floating panel
 - Open a compact in-page control panel with current video and rule state
 - Save intro end from the current playback timestamp
-- Save outro skip using remaining time instead of an absolute timestamp
+- Save outro start using remaining time instead of an absolute timestamp
 - Persist the floating button position in `chrome.storage.local`
 - Detect playlist context automatically from the YouTube watch-page `list` query parameter
 - Apply a current video rule to the detected playlist with one click
 - Preserve rule priority across video, playlist, and channel scopes
-- Test core logic and storage behavior with Vitest
+- Keep core skip logic isolated in pure TypeScript modules with Vitest coverage
 
-## Demo Behavior
+## Quick Start
 
-On a YouTube episode, click the circular `Skip` button to open the in-page panel, then click `Set intro end` when the intro finishes. On the same or another episode, the content script detects that playback is still before the saved intro boundary and jumps forward automatically.
-
-For outros, click `Set outro start` once playback enters the credits. The extension stores how much time remained in the video at that point. When later episodes reach the same remaining-time window, the extension skips to the end without assuming every episode has the same total duration.
-
-If the current watch URL includes a `list=` query parameter, the panel detects that playlist automatically. After you save a per-video intro or outro rule, the panel can immediately offer a one-click `Apply to playlist` action for that detected list id.
-
-## Why Outro Rules Use Remaining Time
-
-Absolute outro timestamps are brittle for episodic content. A 45-minute episode and a 47-minute episode may start credits at different wall-clock positions while still leaving roughly the same amount of content remaining.
-
-This extension stores outro rules as `outroRemainingSeconds = duration - currentTime`. That makes the rule more portable across mixed episode lengths and is the reason playlist-wide outro rules work well in practice.
-
-## Installation
-
-The easiest way to try the extension locally is to build it and load the generated `dist` directory as an unpacked extension.
-
-## Local Development Setup
-
-1. Install Node.js 20+.
-2. Install dependencies:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-## Running Tests
+2. Run tests:
 
 ```bash
 npm test
 ```
 
-The test suite covers URL parsing, rule priority, intro/outro rule creation, skip targeting, in-page UI state helpers, floating button position clamping, and `chrome.storage.local`-style persistence behavior.
-
-## Building The Extension
+3. Build the extension:
 
 ```bash
 npm run build
 ```
 
-The production build is emitted to `dist/`.
+4. Load `dist/` as an unpacked extension in Chrome or Brave.
 
-## Loading The Extension In Chrome Or Brave
+For step-by-step instructions, see the [local testing guide](docs/local-testing.md).
 
-1. Open `chrome://extensions` or `brave://extensions`.
-2. Enable Developer mode.
-3. Click `Load unpacked`.
-4. Select the repository’s `dist` directory.
-5. Refresh any open YouTube watch page after loading or reloading the extension.
+## Project Structure
 
-## Project Architecture
+```text
+episode-skip/
+├── design/                  Design references and UI mockups
+├── dist/                    Built extension output
+├── docs/                    Project documentation and guides
+├── logo/                    Extension logo and icon assets
+├── scripts/                 Validation and utility scripts
+├── src/                     Extension source code
+│   ├── content.ts           Content script and in-page UI orchestration
+│   ├── rules.ts             Rule resolution and skip calculation logic
+│   ├── storage.ts           chrome.storage.local persistence helpers
+│   ├── ui-position.ts       Floating button placement and clamping helpers
+│   ├── ui-state.ts          Panel display and state formatting helpers
+│   └── youtube.ts           YouTube URL and page-context parsing
+├── tests/                   Vitest unit tests
+├── manifest.json            Manifest V3 extension definition
+├── package.json             Scripts and development dependencies
+├── tsconfig.json            TypeScript configuration
+└── vite.config.ts           Vite build configuration
+```
 
-- `manifest.json`
-  Manifest V3 definition, permissions, and YouTube content-script registration.
-- `src/content.ts`
-  Runs on YouTube watch pages, injects the draggable button and panel, persists button position and rules, handles YouTube SPA navigation, and performs automatic skipping.
-- `src/rules.ts`
-  Pure rule logic for priority resolution and skip target calculation.
-- `src/storage.ts`
-  `chrome.storage.local` helpers for rule persistence, playlist promotion, and saved button position.
-- `src/youtube.ts`
-  URL and page-context parsing utilities.
-- `src/ui-state.ts`
-  Pure formatting and prompt helpers for the in-page control panel.
-- `src/ui-position.ts`
-  Pure helpers for default placement and viewport clamping of the draggable button.
-- `tests/`
-  Vitest coverage for the core business logic and storage behavior.
+## Tech Used
+
+- TypeScript
+- Vite
+- Vitest
+- Chrome Extensions Manifest V3 APIs
+- `chrome.storage.local` for persisted rule and UI state
+
+## How It Works
+
+Skipisode runs as a content script on YouTube watch pages and keeps the browser-facing layer thin. The UI stays inside the page as a draggable circular button plus a compact control panel, while the core skip and rule-resolution logic lives in testable TypeScript modules.
+
+For intro rules, the extension stores the playback timestamp at which the intro ends. For outro rules, it stores `duration - currentTime`, which makes the rule more portable across episodes with slightly different lengths.
+
+When a rule is available and the current playback state matches its conditions, the extension jumps forward automatically. If the current URL includes a `list=...` parameter, the saved rule can also be promoted to the playlist scope from the in-page panel.
 
 ## Rule Priority
 
-Rule resolution is intentionally deterministic:
+Rule resolution is deterministic:
 
 1. Per-video rule
 2. Per-playlist rule
 3. Per-channel rule
 4. No rule
 
-This means a hand-tuned rule for one specific upload always wins, while playlist and channel scopes provide broader fallbacks.
+This means a manually tuned rule for one upload always overrides broader fallback scopes.
 
-## Playlist Rule Workflow
+## Testing
 
-Playlist rules are explicit, but the main workflow is automatic playlist detection from YouTube watch URLs.
+The test suite covers:
 
-1. Save a per-video intro or outro rule from the in-page panel.
-2. If the current watch URL contains `list=...`, the panel shows a one-click `Apply to playlist` prompt.
-3. Confirm the action to copy the current video rule into `RuleStore.playlist[playlistId]`.
+- URL parsing
+- Rule priority resolution
+- Intro and outro rule creation
+- Skip target calculation
+- UI state helpers
+- Floating button position clamping
+- Storage behavior built around `chrome.storage.local`
 
-The original per-video rule is kept in place, so it still overrides the playlist rule when both exist.
-
-The primary flow is the detected current-playlist workflow driven by the `list` query parameter on standard YouTube watch URLs.
-
-## Manual Testing Checklist
-
-1. Load `dist` as an unpacked extension.
-2. Open a YouTube watch page.
-3. Confirm the circular floating button appears near the lower-right area without covering the main YouTube controls.
-4. Drag the button, refresh the page, and confirm its position persists.
-5. Click the button and confirm the panel opens.
-6. Click outside the panel and confirm it closes.
-7. Press `Escape` while the panel is open and confirm it closes.
-8. Save an intro rule and confirm visible success feedback appears.
-9. Save an outro rule and confirm visible success feedback appears.
-10. Open a playlist-backed watch URL containing `list=...`.
-11. Save a rule and use `Apply to playlist`.
-12. Open another video with the same playlist id and confirm the playlist rule applies.
+Manual browser testing steps are documented in the [local testing guide](docs/local-testing.md).
 
 ## Known Limitations
 
 - The extension only targets standard YouTube watch pages.
-- Channel detection depends on stable channel metadata being present in the page.
-- Channel rules still participate in resolution priority, but the current in-page panel focuses on video and playlist authoring flows.
-- Manual backward seeking is handled with a lightweight suppression heuristic, not a full intent model.
+- Channel detection depends on stable metadata being present in the page.
+- Channel rules participate in resolution priority, but the current UI focuses on video and playlist authoring flows.
+- Manual backward seeking is handled with a lightweight suppression heuristic rather than a full intent model.
 
-## Future Roadmap
+## Roadmap
 
 - First-class channel rule editing from the in-page panel
 - Import and export of saved rules
 - A lightweight options page for browsing and deleting stored rules
 - Better diagnostics for ambiguous or partially loaded YouTube pages
 - End-to-end browser tests around SPA navigation and drag interactions
-
-## License
-
-MIT. If you use this in another project or publish modifications, keep the license notice intact.
