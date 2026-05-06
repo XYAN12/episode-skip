@@ -291,7 +291,7 @@ async function ensureUi(): Promise<void> {
           <span class="yis-brand__mark">${getLogoImageMarkup("yis-brand__logo")}</span>
           <div class="yis-brand__copy">
             <h2 class="yis-brand__title">Skipisode</h2>
-            <span class="yis-brand__version">v0.1.0</span>
+            <span class="yis-brand__version">v1.0.0</span>
           </div>
         </div>
         <button type="button" class="yis-locale" data-action="toggleLocale">
@@ -1102,6 +1102,10 @@ function createUiStyleElement(): HTMLStyleElement {
     #${UI_ROOT_ID} .yis-panel {
       pointer-events: auto;
       font-family: var(--yis-font);
+    }
+
+    #${UI_ROOT_ID} [hidden] {
+      display: none !important;
     }
 
     #${UI_ROOT_ID} .yis-button {

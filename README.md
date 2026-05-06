@@ -32,6 +32,9 @@ It focuses on three practical goals:
 - [Usage guide](docs/how-to-use.md)
 - [使用教程（中文版）](docs/how-to-use.zh-CN.md)
 - [README 中文版](docs/README.zh-CN.md)
+- [Privacy policy](docs/privacy-policy.md)
+- [Chrome Web Store listing copy](docs/chrome-web-store-listing.md)
+- [Reviewer test instructions](docs/reviewer-test-instructions.md)
 
 ## Features
 
