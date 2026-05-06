@@ -37,16 +37,13 @@ type UiElements = {
   root: HTMLDivElement;
   button: HTMLButtonElement;
   panel: HTMLDivElement;
-  title: HTMLElement;
-  videoId: HTMLElement;
-  playlistId: HTMLElement;
+  panelTitle: HTMLElement;
+  videoTitle: HTMLElement;
   currentTime: HTMLElement;
-  duration: HTMLElement;
-  activeRuleSource: HTMLElement;
   introValue: HTMLElement;
   outroValue: HTMLElement;
-  playlistNote: HTMLElement;
   playlistPrompt: HTMLElement;
+  playlistPromptText: HTMLElement;
   statusMessage: HTMLElement;
   setIntroButton: HTMLButtonElement;
   setOutroButton: HTMLButtonElement;
@@ -153,29 +150,33 @@ async function ensureUi(): Promise<void> {
     <button type="button" class="yis-button" aria-label="Open YouTube Intro Skip panel">Skip</button>
     <section class="yis-panel" hidden aria-label="YouTube Intro Skip panel">
       <header class="yis-header">
-        <p class="yis-eyebrow">YouTube Intro Skip</p>
-        <h2 class="yis-title"></h2>
+        <h2 class="yis-title">YouTube Intro Skip</h2>
       </header>
-      <div class="yis-stats">
-        <div class="yis-stat"><span>Video id</span><strong data-field="videoId"></strong></div>
-        <div class="yis-stat"><span>Playlist id</span><strong data-field="playlistId"></strong></div>
-        <div class="yis-stat"><span>Current timestamp</span><strong data-field="currentTime"></strong></div>
-        <div class="yis-stat"><span>Duration</span><strong data-field="duration"></strong></div>
-        <div class="yis-stat"><span>Active rule source</span><strong data-field="activeRuleSource"></strong></div>
-        <div class="yis-stat"><span>Saved intro end</span><strong data-field="introValue"></strong></div>
-        <div class="yis-stat"><span>Saved outro remaining</span><strong data-field="outroValue"></strong></div>
+      <div class="yis-section">
+        <span class="yis-label">Video</span>
+        <p class="yis-video-title" data-field="videoTitle"></p>
       </div>
-      <p class="yis-note" data-field="playlistNote"></p>
+      <div class="yis-section">
+        <span class="yis-label">Current time</span>
+        <p class="yis-value yis-value--large" data-field="currentTime"></p>
+      </div>
+      <div class="yis-section">
+        <span class="yis-label">Rules</span>
+        <div class="yis-rule-list">
+          <div class="yis-rule-row"><span>Intro end</span><strong data-field="introValue"></strong></div>
+          <div class="yis-rule-row"><span>Outro starts when</span><strong data-field="outroValue"></strong><em>remaining</em></div>
+        </div>
+      </div>
       <div class="yis-actions">
         <button type="button" class="yis-action yis-action--primary" data-action="setIntro">Set intro end</button>
         <button type="button" class="yis-action yis-action--primary" data-action="setOutro">Set outro start</button>
-        <button type="button" class="yis-action" data-action="clearRule">Clear current video rule</button>
+        <button type="button" class="yis-action yis-action--subtle" data-action="clearRule">Clear rules</button>
       </div>
       <div class="yis-playlist-prompt" hidden>
-        <p>This video is in a playlist. Apply this rule to the whole playlist?</p>
+        <p class="yis-playlist-prompt__text">This video is in a playlist. Apply these rules to the playlist?</p>
         <div class="yis-playlist-actions">
           <button type="button" class="yis-action yis-action--primary" data-action="applyPlaylist">Apply to playlist</button>
-          <button type="button" class="yis-action" data-action="dismissPrompt">Not now</button>
+          <button type="button" class="yis-action yis-action--secondary" data-action="dismissPrompt">Not now</button>
         </div>
       </div>
       <p class="yis-status" data-field="statusMessage" data-status="idle"></p>
@@ -186,16 +187,13 @@ async function ensureUi(): Promise<void> {
 
   const button = root.querySelector<HTMLButtonElement>(".yis-button");
   const panel = root.querySelector<HTMLDivElement>(".yis-panel");
-  const title = root.querySelector<HTMLElement>(".yis-title");
-  const videoId = root.querySelector<HTMLElement>('[data-field="videoId"]');
-  const playlistId = root.querySelector<HTMLElement>('[data-field="playlistId"]');
+  const panelTitle = root.querySelector<HTMLElement>(".yis-title");
+  const videoTitle = root.querySelector<HTMLElement>('[data-field="videoTitle"]');
   const currentTime = root.querySelector<HTMLElement>('[data-field="currentTime"]');
-  const duration = root.querySelector<HTMLElement>('[data-field="duration"]');
-  const activeRuleSource = root.querySelector<HTMLElement>('[data-field="activeRuleSource"]');
   const introValue = root.querySelector<HTMLElement>('[data-field="introValue"]');
   const outroValue = root.querySelector<HTMLElement>('[data-field="outroValue"]');
-  const playlistNote = root.querySelector<HTMLElement>('[data-field="playlistNote"]');
   const playlistPrompt = root.querySelector<HTMLElement>(".yis-playlist-prompt");
+  const playlistPromptText = root.querySelector<HTMLElement>(".yis-playlist-prompt__text");
   const statusMessage = root.querySelector<HTMLElement>('[data-field="statusMessage"]');
   const setIntroButton = root.querySelector<HTMLButtonElement>('[data-action="setIntro"]');
   const setOutroButton = root.querySelector<HTMLButtonElement>('[data-action="setOutro"]');
@@ -206,16 +204,13 @@ async function ensureUi(): Promise<void> {
   if (
     !button ||
     !panel ||
-    !title ||
-    !videoId ||
-    !playlistId ||
+    !panelTitle ||
+    !videoTitle ||
     !currentTime ||
-    !duration ||
-    !activeRuleSource ||
     !introValue ||
     !outroValue ||
-    !playlistNote ||
     !playlistPrompt ||
+    !playlistPromptText ||
     !statusMessage ||
     !setIntroButton ||
     !setOutroButton ||
@@ -231,16 +226,13 @@ async function ensureUi(): Promise<void> {
     root,
     button,
     panel,
-    title,
-    videoId,
-    playlistId,
+    panelTitle,
+    videoTitle,
     currentTime,
-    duration,
-    activeRuleSource,
     introValue,
     outroValue,
-    playlistNote,
     playlistPrompt,
+    playlistPromptText,
     statusMessage,
     setIntroButton,
     setOutroButton,
@@ -352,7 +344,7 @@ async function applyCurrentRuleToPlaylist(): Promise<void> {
   const videoId = state.videoId;
 
   if (!state.playlistId) {
-    setStatus("No playlist detected", "error");
+    setStatus("No playlist found.", "error");
     renderUi();
     return;
   }
@@ -454,16 +446,13 @@ function renderUi(): void {
   }
 
   const viewModel = buildPanelViewModel(currentState);
-  uiElements.title.textContent = viewModel.title;
-  uiElements.videoId.textContent = viewModel.videoId;
-  uiElements.playlistId.textContent = viewModel.playlistId;
+  uiElements.panelTitle.textContent = "YouTube Intro Skip";
+  uiElements.videoTitle.textContent = viewModel.videoTitle;
   uiElements.currentTime.textContent = viewModel.currentTime;
-  uiElements.duration.textContent = viewModel.duration;
-  uiElements.activeRuleSource.textContent = viewModel.activeRuleSource;
   uiElements.introValue.textContent = viewModel.introValue;
   uiElements.outroValue.textContent = viewModel.outroValue;
-  uiElements.playlistNote.textContent = viewModel.playlistNote;
   uiElements.playlistPrompt.hidden = !playlistPromptVisible || !viewModel.canApplyPlaylist;
+  uiElements.playlistPromptText.textContent = "This video is in a playlist. Apply these rules to the playlist?";
   uiElements.applyPlaylistButton.disabled = !viewModel.canApplyPlaylist;
   uiElements.statusMessage.textContent = currentStatusMessage;
   uiElements.statusMessage.dataset.status = currentStatusKind;
@@ -678,16 +667,23 @@ function injectStyles(): void {
       height: ${FLOATING_BUTTON_SIZE}px;
       border: none;
       border-radius: 999px;
-      background: linear-gradient(135deg, #ff5a36 0%, #db2200 100%);
+      background: linear-gradient(180deg, #7fc5ff 0%, #5aa8f7 100%);
       color: #ffffff;
-      font: 700 12px/1.1 "IBM Plex Sans", "Segoe UI", sans-serif;
-      letter-spacing: 0.02em;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.26);
+      font: 700 12px/1.1 -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      letter-spacing: 0.01em;
+      box-shadow: 0 14px 32px rgba(73, 127, 180, 0.25);
       cursor: grab;
+      transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+    }
+
+    #${UI_ROOT_ID} .yis-button:hover {
+      transform: scale(1.04);
+      box-shadow: 0 18px 36px rgba(73, 127, 180, 0.3);
     }
 
     #${UI_ROOT_ID} .yis-button:active {
       cursor: grabbing;
+      transform: scale(0.98);
     }
 
     #${UI_ROOT_ID} .yis-panel {
@@ -695,63 +691,93 @@ function injectStyles(): void {
       width: 320px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      padding: 14px;
-      border: 1px solid rgba(21, 21, 21, 0.1);
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.96);
-      color: #151515;
-      font: 500 13px/1.4 "IBM Plex Sans", "Segoe UI", sans-serif;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
-      backdrop-filter: blur(10px);
+      gap: 16px;
+      padding: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #2f3438;
+      font: 500 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      box-shadow: 0 18px 48px rgba(55, 84, 120, 0.16);
+      backdrop-filter: blur(20px);
     }
 
     #${UI_ROOT_ID} .yis-header {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-    }
-
-    #${UI_ROOT_ID} .yis-eyebrow {
-      margin: 0;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #9a2f0b;
+      gap: 2px;
     }
 
     #${UI_ROOT_ID} .yis-title {
       margin: 0;
-      font-size: 18px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
       line-height: 1.2;
     }
 
-    #${UI_ROOT_ID} .yis-stats {
-      display: grid;
-      gap: 8px;
+    #${UI_ROOT_ID} .yis-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    #${UI_ROOT_ID} .yis-stat {
+    #${UI_ROOT_ID} .yis-label {
+      color: #7b8693;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    #${UI_ROOT_ID} .yis-video-title,
+    #${UI_ROOT_ID} .yis-value {
+      margin: 0;
+      color: #27303a;
+    }
+
+    #${UI_ROOT_ID} .yis-video-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    #${UI_ROOT_ID} .yis-value--large {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    #${UI_ROOT_ID} .yis-rule-list {
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(246, 249, 252, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    #${UI_ROOT_ID} .yis-rule-row {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    #${UI_ROOT_ID} .yis-stat span {
-      color: #615a52;
+    #${UI_ROOT_ID} .yis-rule-row span,
+    #${UI_ROOT_ID} .yis-rule-row em {
+      color: #7b8693;
       font-size: 12px;
+      font-style: normal;
     }
 
-    #${UI_ROOT_ID} .yis-note,
     #${UI_ROOT_ID} .yis-playlist-prompt p,
     #${UI_ROOT_ID} .yis-status {
       margin: 0;
-    }
-
-    #${UI_ROOT_ID} .yis-note {
-      color: #615a52;
-      font-size: 12px;
     }
 
     #${UI_ROOT_ID} .yis-actions,
@@ -765,26 +791,47 @@ function injectStyles(): void {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      border-radius: 12px;
-      padding: 12px;
-      background: #fff1dd;
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(116, 188, 255, 0.14);
+      border: 1px solid rgba(116, 188, 255, 0.22);
+    }
+
+    #${UI_ROOT_ID} .yis-playlist-prompt__text {
+      color: #46627f;
+      font-size: 13px;
     }
 
     #${UI_ROOT_ID} .yis-action {
-      border: 1px solid rgba(21, 21, 21, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.06);
       border-radius: 999px;
-      padding: 9px 12px;
-      background: #efe9df;
-      color: #1f1f1f;
+      padding: 10px 14px;
+      background: #eef3f8;
+      color: #3c4a58;
       font: inherit;
       font-weight: 600;
       cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+    }
+
+    #${UI_ROOT_ID} .yis-action:hover:enabled {
+      transform: translateY(-1px);
     }
 
     #${UI_ROOT_ID} .yis-action--primary {
-      border: none;
-      background: linear-gradient(135deg, #ff5a36 0%, #db2200 100%);
+      background: linear-gradient(180deg, #7fc5ff 0%, #5aa8f7 100%);
       color: #ffffff;
+      box-shadow: 0 10px 24px rgba(90, 168, 247, 0.24);
+    }
+
+    #${UI_ROOT_ID} .yis-action--secondary {
+      background: rgba(255, 255, 255, 0.8);
+      color: #5a6775;
+    }
+
+    #${UI_ROOT_ID} .yis-action--subtle {
+      background: #f5f6f8;
+      color: #6b7280;
     }
 
     #${UI_ROOT_ID} .yis-action:disabled {
@@ -793,20 +840,25 @@ function injectStyles(): void {
     }
 
     #${UI_ROOT_ID} .yis-status {
-      min-height: 38px;
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: #1f1f1f;
-      color: #ffffff;
+      min-height: 20px;
+      border-radius: 999px;
+      padding: 9px 12px;
+      background: rgba(239, 243, 248, 0.95);
+      color: #51606f;
       font-size: 12px;
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
     }
 
     #${UI_ROOT_ID} .yis-status[data-status="success"] {
-      background: #1c5b34;
+      background: rgba(108, 198, 156, 0.18);
+      color: #356b55;
     }
 
     #${UI_ROOT_ID} .yis-status[data-status="error"] {
-      background: #7a210e;
+      background: rgba(241, 127, 127, 0.16);
+      color: #8a4b4b;
     }
   `;
 

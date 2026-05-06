@@ -68,12 +68,26 @@ export async function saveRule(
   rule: SkipRule,
   storageArea: StorageAreaLike = chrome.storage.local
 ): Promise<void> {
+  await upsertRule(scope, key, rule, storageArea);
+}
+
+export async function upsertRule(
+  scope: RuleScope,
+  key: string,
+  partialRule: Partial<SkipRule> & Pick<SkipRule, "updatedAt">,
+  storageArea: StorageAreaLike = chrome.storage.local
+): Promise<void> {
   const currentStore = await loadRuleStore(storageArea);
+  const existingRule = currentStore[scope][key];
+  const nextRule: SkipRule = {
+    ...existingRule,
+    ...partialRule
+  };
   const nextStore: RuleStore = {
     ...currentStore,
     [scope]: {
       ...currentStore[scope],
-      [key]: rule
+      [key]: nextRule
     }
   };
 
@@ -123,7 +137,7 @@ export async function applyVideoRuleToCurrentPlaylist(
     return {
       ok: false,
       error: "NO_PLAYLIST_ID",
-      message: "No playlist detected"
+      message: "No playlist found."
     };
   }
 

@@ -42,7 +42,61 @@ describe("storage", () => {
     expect(nextStore.channel.keepChannel?.introEndSeconds).toBe(30);
   });
 
+  it("saving intro preserves an existing outro", async () => {
+    store.video.keepVideo = {
+      introEndSeconds: 95,
+      outroRemainingSeconds: 100,
+      updatedAt: 1000
+    };
+
+    await saveRule("video", "keepVideo", { introEndSeconds: 120, updatedAt: 2000 }, storageArea);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.video.keepVideo).toEqual({
+      introEndSeconds: 120,
+      outroRemainingSeconds: 100,
+      updatedAt: 2000
+    });
+  });
+
+  it("saving outro preserves an existing intro", async () => {
+    store.video.keepVideo = {
+      introEndSeconds: 120,
+      outroRemainingSeconds: 100,
+      updatedAt: 2000
+    };
+
+    await saveRule("video", "keepVideo", { outroRemainingSeconds: 80, updatedAt: 3000 }, storageArea);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.video.keepVideo).toEqual({
+      introEndSeconds: 120,
+      outroRemainingSeconds: 80,
+      updatedAt: 3000
+    });
+  });
+
+  it("updatedAt changes after each save", async () => {
+    store.video.keepVideo = {
+      introEndSeconds: 95,
+      outroRemainingSeconds: 100,
+      updatedAt: 1000
+    };
+
+    await saveRule("video", "keepVideo", { introEndSeconds: 120, updatedAt: 2000 }, storageArea);
+    await saveRule("video", "keepVideo", { outroRemainingSeconds: 80, updatedAt: 3000 }, storageArea);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.video.keepVideo?.updatedAt).toBe(3000);
+  });
+
   it("clearing one scoped rule only removes that scope and key", async () => {
+    store.playlist.keepPlaylist = {
+      introEndSeconds: 20,
+      outroRemainingSeconds: 50,
+      updatedAt: 2
+    };
+
     await clearRule("playlist", "keepPlaylist", storageArea);
 
     const nextStore = await loadRuleStore(storageArea);
@@ -52,7 +106,7 @@ describe("storage", () => {
   });
 
   it("copies the current video rule to a playlist without mutating the original video rule", async () => {
-    const originalVideoRule = { introEndSeconds: 95.2, updatedAt: 99 };
+    const originalVideoRule = { introEndSeconds: 95.2, outroRemainingSeconds: 100, updatedAt: 99 };
     store.video.abc123 = originalVideoRule;
 
     const result = await applyVideoRuleToPlaylist(
@@ -62,7 +116,7 @@ describe("storage", () => {
     );
 
     expect(result.ok).toBe(true);
-    expect(result.message).toBe("Playlist rule saved for PLn7ueQx7cc2wkC03NjiaNpIJUBP2M4cmT");
+    expect(result.message).toBe("Playlist rules saved.");
 
     const nextStore = await loadRuleStore(storageArea);
     expect(nextStore.playlist.PLn7ueQx7cc2wkC03NjiaNpIJUBP2M4cmT).toEqual(originalVideoRule);
@@ -95,7 +149,7 @@ describe("storage", () => {
   });
 
   it("copies the current video rule to the current playlist id", async () => {
-    const originalVideoRule = { outroRemainingSeconds: 100, updatedAt: 88 };
+    const originalVideoRule = { introEndSeconds: 95, outroRemainingSeconds: 100, updatedAt: 88 };
     store.video.abc123 = originalVideoRule;
 
     const result = await applyVideoRuleToCurrentPlaylist("abc123", "PL123", storageArea);
@@ -124,7 +178,41 @@ describe("storage", () => {
     expect(result).toEqual({
       ok: false,
       error: "NO_PLAYLIST_ID",
-      message: "No playlist detected"
+      message: "No playlist found."
+    });
+  });
+
+  it("saving playlist intro preserves playlist outro", async () => {
+    store.playlist.keepPlaylist = {
+      introEndSeconds: 20,
+      outroRemainingSeconds: 50,
+      updatedAt: 2
+    };
+
+    await saveRule("playlist", "keepPlaylist", { introEndSeconds: 25, updatedAt: 10 }, storageArea);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.playlist.keepPlaylist).toEqual({
+      introEndSeconds: 25,
+      outroRemainingSeconds: 50,
+      updatedAt: 10
+    });
+  });
+
+  it("saving playlist outro preserves playlist intro", async () => {
+    store.playlist.keepPlaylist = {
+      introEndSeconds: 25,
+      outroRemainingSeconds: 50,
+      updatedAt: 10
+    };
+
+    await saveRule("playlist", "keepPlaylist", { outroRemainingSeconds: 40, updatedAt: 12 }, storageArea);
+
+    const nextStore = await loadRuleStore(storageArea);
+    expect(nextStore.playlist.keepPlaylist).toEqual({
+      introEndSeconds: 25,
+      outroRemainingSeconds: 40,
+      updatedAt: 12
     });
   });
 });

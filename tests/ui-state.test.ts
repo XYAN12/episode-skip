@@ -10,20 +10,18 @@ import {
 
 describe("in-page UI state", () => {
   it("generates feedback after saving intro", () => {
-    expect(formatIntroSavedMessage(95)).toBe("Intro end saved at 01:35");
+    expect(formatIntroSavedMessage(95)).toBe("Intro saved.");
   });
 
   it("generates feedback after saving outro", () => {
-    expect(formatOutroSavedMessage(100)).toBe("Outro start saved; will skip when 01:40 remains");
+    expect(formatOutroSavedMessage(100)).toBe("Outro saved.");
   });
 
   it("generates feedback after applying a playlist rule", () => {
-    expect(formatPlaylistSavedMessage("PLn7ueQx7cc2wkC03NjiaNpIJUBP2M4cmT")).toBe(
-      "Playlist rule saved for PLn7ueQx7cc2wkC03NjiaNpIJUBP2M4cmT"
-    );
+    expect(formatPlaylistSavedMessage("PLn7ueQx7cc2wkC03NjiaNpIJUBP2M4cmT")).toBe("Playlist rules saved.");
   });
 
-  it("builds a panel view model with playlist details", () => {
+  it("builds a panel view model with user-facing details only", () => {
     expect(
       buildPanelViewModel({
         isWatchPage: true,
@@ -38,10 +36,8 @@ describe("in-page UI state", () => {
         videoRule: { introEndSeconds: 95, updatedAt: 1 }
       })
     ).toMatchObject({
-      title: "Episode",
-      videoId: "abc123",
-      playlistId: "PL123",
-      activeRuleSource: "playlist",
+      videoTitle: "Episode",
+      currentTime: "01:35",
       introValue: "01:35"
     });
   });

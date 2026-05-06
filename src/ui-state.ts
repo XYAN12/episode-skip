@@ -14,49 +14,37 @@ export type PageState = {
 };
 
 export type PanelViewModel = {
-  title: string;
-  videoId: string;
-  playlistId: string;
+  videoTitle: string;
   currentTime: string;
-  duration: string;
-  activeRuleSource: string;
   introValue: string;
   outroValue: string;
-  playlistNote: string;
   canApplyPlaylist: boolean;
 };
 
 export function buildPanelViewModel(state: PageState): PanelViewModel {
   return {
-    title: state.title ?? "Untitled video",
-    videoId: state.videoId ?? "Unavailable",
-    playlistId: state.playlistId ?? "Not in playlist",
+    videoTitle: state.title ?? "Untitled video",
     currentTime: formatClock(state.currentTime),
-    duration: formatClock(state.duration),
-    activeRuleSource: state.activeRuleSource,
     introValue:
       typeof state.activeRule?.introEndSeconds === "number" ? formatClock(state.activeRule.introEndSeconds) : "Not set",
     outroValue:
       typeof state.activeRule?.outroRemainingSeconds === "number"
         ? formatClock(state.activeRule.outroRemainingSeconds)
         : "Not set",
-    playlistNote: state.playlistId
-      ? `Detected playlist ${state.playlistId}`
-      : "This video is not currently opened from a playlist.",
     canApplyPlaylist: Boolean(state.playlistId && state.videoRule)
   };
 }
 
 export function formatIntroSavedMessage(seconds: number): string {
-  return `Intro end saved at ${formatClock(seconds)}`;
+  return seconds >= 0 ? "Intro saved." : "Intro saved.";
 }
 
 export function formatOutroSavedMessage(remainingSeconds: number): string {
-  return `Outro start saved; will skip when ${formatClock(remainingSeconds)} remains`;
+  return remainingSeconds >= 0 ? "Outro saved." : "Outro saved.";
 }
 
-export function formatPlaylistSavedMessage(playlistId: string): string {
-  return `Playlist rule saved for ${playlistId}`;
+export function formatPlaylistSavedMessage(_playlistId: string): string {
+  return "Playlist rules saved.";
 }
 
 export function shouldShowPlaylistPrompt(
