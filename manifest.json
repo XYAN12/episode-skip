@@ -22,12 +22,12 @@
   "web_accessible_resources": [
     {
       "resources": ["logo/logo.jpg", "logo/icons/*.png"],
-      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"]
+      "matches": ["*://www.youtube.com/*"]
     }
   ],
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
+      "matches": ["*://www.youtube.com/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

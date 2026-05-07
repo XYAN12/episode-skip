@@ -208,8 +208,14 @@ function registerGlobalListeners(): void {
   globalListenersRegistered = true;
   document.addEventListener("pointerdown", handleDocumentPointerDown, true);
   document.addEventListener("keydown", handleDocumentKeyDown);
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
   window.addEventListener("resize", () => {
     if (!buttonPosition || !uiElements) {
+      return;
+    }
+
+    if (isFullscreenActive()) {
+      updateUiVisibility();
       return;
     }
 
@@ -981,6 +987,20 @@ function handleDocumentKeyDown(event: KeyboardEvent): void {
   }
 }
 
+function handleFullscreenChange(): void {
+  if (!uiElements) {
+    return;
+  }
+
+  if (!isFullscreenActive() && buttonPosition) {
+    buttonPosition = clampFloatingButtonPosition(buttonPosition, getViewportSize());
+    applyButtonPosition(buttonPosition);
+    void saveFloatingButtonPosition(buttonPosition);
+  }
+
+  updateUiVisibility();
+}
+
 function applyButtonPosition(position: FloatingButtonPosition): void {
   if (!uiElements) {
     return;
@@ -1026,7 +1046,7 @@ function showUi(): void {
     return;
   }
 
-  uiElements.host.hidden = false;
+  updateUiVisibility();
 }
 
 function hideUi(): void {
@@ -1036,6 +1056,19 @@ function hideUi(): void {
 
   uiElements.host.hidden = true;
   uiElements.panel.hidden = true;
+}
+
+function updateUiVisibility(): void {
+  if (!uiElements) {
+    return;
+  }
+
+  const shouldHideForFullscreen = isFullscreenActive();
+  uiElements.host.hidden = shouldHideForFullscreen;
+
+  if (shouldHideForFullscreen) {
+    uiElements.panel.hidden = true;
+  }
 }
 
 function getContext() {
@@ -1061,6 +1094,10 @@ function getViewportSize() {
     width: window.innerWidth,
     height: window.innerHeight
   };
+}
+
+function isFullscreenActive(): boolean {
+  return document.fullscreenElement !== null;
 }
 
 function applyLocalizedCopy(): void {
