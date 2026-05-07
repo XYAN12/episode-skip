@@ -17,156 +17,125 @@
     <link rel="stylesheet" href="./privacy-site.css" />
   </head>
   <body>
-    <div class="site-shell">
-      <aside class="site-rail">
-        <div class="rail-block rail-brand">
-          <div class="brand-mark" aria-hidden="true"></div>
-          <div>
-            <p class="brand-name">Skipisode</p>
-            <p class="brand-context">Privacy Policy</p>
-          </div>
+    <main class="site-shell">
+      <div class="document-header">
+        <div class="document-meta">
+          <p class="document-kicker">Skipisode</p>
+          <p class="document-stamp">Chrome-compatible browser extension</p>
+          <p class="document-stamp">Last updated: May 7, 2026</p>
         </div>
-
-        <div class="rail-block">
-          <p class="rail-label">Applies to</p>
-          <p class="rail-value">Chrome-compatible browser extension</p>
-        </div>
-
-        <div class="rail-block">
-          <p class="rail-label">Last updated</p>
-          <p class="rail-value">May 7, 2026</p>
-        </div>
-
-        <nav class="rail-nav" aria-label="Section navigation">
-          <a href="#overview">Overview</a>
-          <a href="#data-access">Data Access</a>
-          <a href="#data-use">Data Use</a>
-          <a href="#storage">Data Storage</a>
-          <a href="#sharing">Data Sharing</a>
-          <a href="#services">External Services</a>
-          <a href="#control">User Control</a>
-          <a href="#scope">Scope</a>
-          <a href="#contact">Contact</a>
-        </nav>
-
-        <div class="rail-block rail-links">
+        <h1>Privacy Policy</h1>
+        <p class="document-summary">
+          Skipisode stores skip rules locally in the browser and does not run a backend service,
+          analytics pipeline, or remote code for the extension runtime.
+        </p>
+        <div class="document-links">
           <a href="./privacy-policy.md">Markdown source</a>
           <a href="./how-to-use.md">Usage guide</a>
         </div>
-      </aside>
+      </div>
 
-      <main class="document-shell">
-        <div class="document-header">
-          <p class="document-kicker">Skipisode</p>
-          <h1>Privacy Policy</h1>
-          <p class="document-summary">
-            Skipisode stores skip rules locally in the browser and does not run a backend service,
-            analytics pipeline, or remote code for the extension runtime.
+      <article class="document-card">
+        <section id="overview" class="policy-section">
+          <h2>Overview</h2>
+          <p>
+            Skipisode is a browser extension for Chrome-compatible browsers that helps users save
+            and automatically re-apply intro and outro skip rules on supported YouTube watch-page
+            URLs.
           </p>
-        </div>
+          <p>
+            The extension works locally in the user's browser. It does not provide a cloud account
+            system, a backend service, or user-to-user sharing features.
+          </p>
+        </section>
 
-        <article class="document-card">
-          <section id="overview" class="policy-section">
-            <h2>Overview</h2>
-            <p>
-              Skipisode is a browser extension for Chrome-compatible browsers that helps users save
-              and automatically re-apply intro and outro skip rules on supported YouTube watch-page
-              URLs.
-            </p>
-            <p>
-              The extension works locally in the user's browser. It does not provide a cloud
-              account system, a backend service, or user-to-user sharing features.
-            </p>
-          </section>
+        <section id="data-access" class="policy-section">
+          <h2>What Data Skipisode Accesses</h2>
+          <p>On supported YouTube watch pages, Skipisode may access:</p>
+          <ul>
+            <li>The current page URL</li>
+            <li>The current video ID</li>
+            <li>The current playlist ID, if present in the URL</li>
+            <li>The current playback time and video duration</li>
+            <li>The video title shown on the page</li>
+            <li>Channel metadata available on the page when needed for rule matching</li>
+          </ul>
+          <p>Skipisode stores the following extension data locally using <code>chrome.storage.local</code>:</p>
+          <ul>
+            <li>Saved skip rules for videos, playlists, or channels</li>
+            <li>The floating button position</li>
+            <li>The selected interface language</li>
+            <li>Internal playlist-to-source-video bookkeeping used by the playlist rule flow</li>
+          </ul>
+        </section>
 
-          <section id="data-access" class="policy-section">
-            <h2>What Data Skipisode Accesses</h2>
-            <p>On supported YouTube watch pages, Skipisode may access:</p>
-            <ul>
-              <li>The current page URL</li>
-              <li>The current video ID</li>
-              <li>The current playlist ID, if present in the URL</li>
-              <li>The current playback time and video duration</li>
-              <li>The video title shown on the page</li>
-              <li>Channel metadata available on the page when needed for rule matching</li>
-            </ul>
-            <p>Skipisode stores the following extension data locally using <code>chrome.storage.local</code>:</p>
-            <ul>
-              <li>Saved skip rules for videos, playlists, or channels</li>
-              <li>The floating button position</li>
-              <li>The selected interface language</li>
-              <li>Internal playlist-to-source-video bookkeeping used by the playlist rule flow</li>
-            </ul>
-          </section>
+        <section id="data-use" class="policy-section">
+          <h2>How The Data Is Used</h2>
+          <ul>
+            <li>Let users save intro and outro skip points</li>
+            <li>Re-apply those skip points on later supported YouTube watch pages</li>
+            <li>Position the in-page button consistently</li>
+            <li>Show the selected interface language</li>
+            <li>Support playlist rule application and cleanup behavior</li>
+          </ul>
+        </section>
 
-          <section id="data-use" class="policy-section">
-            <h2>How The Data Is Used</h2>
-            <ul>
-              <li>Let users save intro and outro skip points</li>
-              <li>Re-apply those skip points on later supported YouTube watch pages</li>
-              <li>Position the in-page button consistently</li>
-              <li>Show the selected interface language</li>
-              <li>Support playlist rule application and cleanup behavior</li>
-            </ul>
-          </section>
+        <section id="storage" class="policy-section">
+          <h2>Data Storage</h2>
+          <p>
+            All saved extension data is stored locally in the user's browser through
+            <code>chrome.storage.local</code>.
+          </p>
+          <p>
+            Skipisode does not upload saved rules, browsing activity, or playback history to a
+            developer-operated server.
+          </p>
+        </section>
 
-          <section id="storage" class="policy-section">
-            <h2>Data Storage</h2>
-            <p>
-              All saved extension data is stored locally in the user's browser through
-              <code>chrome.storage.local</code>.
-            </p>
-            <p>
-              Skipisode does not upload saved rules, browsing activity, or playback history to a
-              developer-operated server.
-            </p>
-          </section>
+        <section id="sharing" class="policy-section">
+          <h2>Data Sharing</h2>
+          <p>Skipisode does not sell personal information.</p>
+          <p>
+            Skipisode does not share saved rules, browsing activity, or extension data with third
+            parties.
+          </p>
+        </section>
 
-          <section id="sharing" class="policy-section">
-            <h2>Data Sharing</h2>
-            <p>Skipisode does not sell personal information.</p>
-            <p>
-              Skipisode does not share saved rules, browsing activity, or extension data with third
-              parties.
-            </p>
-          </section>
+        <section id="services" class="policy-section">
+          <h2>Remote Code And External Services</h2>
+          <p>Skipisode does not use remote code execution for its core extension logic.</p>
+          <p>
+            Skipisode does not use analytics, advertising SDKs, or third-party tracking services in
+            the extension runtime.
+          </p>
+        </section>
 
-          <section id="services" class="policy-section">
-            <h2>Remote Code And External Services</h2>
-            <p>Skipisode does not use remote code execution for its core extension logic.</p>
-            <p>
-              Skipisode does not use analytics, advertising SDKs, or third-party tracking services
-              in the extension runtime.
-            </p>
-          </section>
+        <section id="control" class="policy-section">
+          <h2>User Control</h2>
+          <ul>
+            <li>
+              Clear saved rules for the current video, playlist, or active rule scope through the
+              extension UI where supported
+            </li>
+            <li>Remove the extension from the browser</li>
+            <li>Clear extension storage through the browser's extension management tools</li>
+          </ul>
+        </section>
 
-          <section id="control" class="policy-section">
-            <h2>User Control</h2>
-            <ul>
-              <li>
-                Clear saved rules for the current video, playlist, or active rule scope through the
-                extension UI where supported
-              </li>
-              <li>Remove the extension from the browser</li>
-              <li>Clear extension storage through the browser's extension management tools</li>
-            </ul>
-          </section>
+        <section id="scope" class="policy-section">
+          <h2>Scope</h2>
+          <p>
+            Skipisode is intended for supported YouTube watch-page URLs. It does not claim to
+            support every YouTube surface, such as Shorts or other non-watch layouts.
+          </p>
+        </section>
 
-          <section id="scope" class="policy-section">
-            <h2>Scope</h2>
-            <p>
-              Skipisode is intended for supported YouTube watch-page URLs. It does not claim to
-              support every YouTube surface, such as Shorts or other non-watch layouts.
-            </p>
-          </section>
-
-          <section id="contact" class="policy-section">
-            <h2>Contact</h2>
-            <p>For support or privacy questions, contact:</p>
-            <p><a class="contact-link" href="mailto:skipisode@outlook.com">skipisode@outlook.com</a></p>
-          </section>
-        </article>
-      </main>
-    </div>
+        <section id="contact" class="policy-section">
+          <h2>Contact</h2>
+          <p>For support or privacy questions, contact:</p>
+          <p><a class="contact-link" href="mailto:skipisode@outlook.com">skipisode@outlook.com</a></p>
+        </section>
+      </article>
+    </main>
   </body>
 </html>
