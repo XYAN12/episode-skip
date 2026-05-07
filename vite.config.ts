@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { copyFileSync, cpSync, mkdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 
 export default defineConfig({
   plugins: [
@@ -9,7 +9,10 @@ export default defineConfig({
       closeBundle() {
         mkdirSync(resolve("dist"), { recursive: true });
         copyFileSync(resolve("manifest.json"), resolve("dist/manifest.json"));
-        cpSync(resolve("logo"), resolve("dist/logo"), { recursive: true });
+        cpSync(resolve("logo"), resolve("dist/logo"), {
+          recursive: true,
+          filter: (sourcePath) => basename(sourcePath) !== ".DS_Store"
+        });
       }
     }
   ],

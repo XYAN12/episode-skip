@@ -40,6 +40,10 @@ const FEEDBACK_RESET_MS = 1600;
 const UI_ROOT_ID = "youtube-intro-skip-root";
 const UI_STYLE_ID = "youtube-intro-skip-styles";
 const LOGO_ASSET_PATH = "logo/logo.jpg";
+const HOW_TO_USE_URLS: Record<UiLocale, string> = {
+  en: "https://github.com/XYAN12/episode-skip/blob/main/docs/how-to-use.md",
+  "zh-CN": "https://github.com/XYAN12/episode-skip/blob/main/docs/how-to-use.zh-CN.md"
+};
 
 type UiElements = {
   host: HTMLDivElement;
@@ -63,6 +67,7 @@ type UiElements = {
   setIntroButton: HTMLButtonElement;
   setOutroButton: HTMLButtonElement;
   clearRuleButton: HTMLButtonElement;
+  howToUseButton: HTMLButtonElement;
   applyPlaylistButton: HTMLButtonElement;
   dismissPromptButton: HTMLButtonElement;
 };
@@ -353,7 +358,11 @@ async function ensureUi(): Promise<void> {
             <span class="yis-footer__icon">${getTrashSvg()}</span>
             <span data-i18n="clearRules">Clear rules</span>
           </button>
-          <button type="button" class="yis-footer__action yis-footer__action--muted" tabindex="-1" aria-hidden="true">
+          <button
+            type="button"
+            class="yis-footer__action yis-footer__action--muted"
+            data-action="openHowToUse"
+          >
             <span data-i18n="howToUse">How to use</span>
             <span class="yis-footer__icon">${getChevronRightSvg()}</span>
           </button>
@@ -427,6 +436,7 @@ async function ensureUi(): Promise<void> {
   const setIntroButton = root.querySelector<HTMLButtonElement>('[data-action="setIntro"]');
   const setOutroButton = root.querySelector<HTMLButtonElement>('[data-action="setOutro"]');
   const clearRuleButton = root.querySelector<HTMLButtonElement>('[data-action="clearRule"]');
+  const howToUseButton = root.querySelector<HTMLButtonElement>('[data-action="openHowToUse"]');
   const applyPlaylistButton = root.querySelector<HTMLButtonElement>('[data-action="applyPlaylist"]');
   const dismissPromptButton = root.querySelector<HTMLButtonElement>('[data-action="dismissPrompt"]');
 
@@ -450,6 +460,7 @@ async function ensureUi(): Promise<void> {
     !setIntroButton ||
     !setOutroButton ||
     !clearRuleButton ||
+    !howToUseButton ||
     !applyPlaylistButton ||
     !dismissPromptButton
   ) {
@@ -479,6 +490,7 @@ async function ensureUi(): Promise<void> {
     setIntroButton,
     setOutroButton,
     clearRuleButton,
+    howToUseButton,
     applyPlaylistButton,
     dismissPromptButton
   };
@@ -512,6 +524,13 @@ async function ensureUi(): Promise<void> {
     }
 
     void clearCurrentVideoRule();
+  });
+  howToUseButton.addEventListener("click", (event) => {
+    if (!isTrustedUserEvent(event)) {
+      return;
+    }
+
+    openHowToUsePage();
   });
   applyPlaylistButton.addEventListener("click", (event) => {
     if (!isTrustedUserEvent(event)) {
@@ -932,6 +951,15 @@ function handleButtonPointerUp(event: PointerEvent): void {
   if (moved && buttonPosition) {
     skipNextButtonToggle = true;
     void saveFloatingButtonPosition(buttonPosition);
+  }
+}
+
+function openHowToUsePage(): void {
+  const howToUseUrl = HOW_TO_USE_URLS[currentLocale];
+  const openedWindow = window.open(howToUseUrl, "_blank", "noopener,noreferrer");
+
+  if (!openedWindow) {
+    window.location.assign(howToUseUrl);
   }
 }
 
