@@ -117,7 +117,7 @@ describe("storage", () => {
     expect(nextStore.channel.keepChannel?.introEndSeconds).toBe(30);
   });
 
-  it("clearing a playlist rule also clears video rules that were used to build that playlist rule", async () => {
+  it("clearing a playlist rule preserves video rules that were used to build that playlist rule", async () => {
     savedItems.playlistSourceVideos = {
       PL123: ["introVideo", "outroVideo"]
     };
@@ -130,8 +130,8 @@ describe("storage", () => {
 
     const nextStore = await loadRuleStore(storageArea);
     expect(nextStore.playlist.PL123).toBeUndefined();
-    expect(nextStore.video.introVideo).toBeUndefined();
-    expect(nextStore.video.outroVideo).toBeUndefined();
+    expect(nextStore.video.introVideo).toEqual({ introEndSeconds: 62, updatedAt: 10 });
+    expect(nextStore.video.outroVideo).toEqual({ outroRemainingSeconds: 2640, updatedAt: 12 });
     expect(nextStore.video.keepVideo).toEqual({ introEndSeconds: 10, updatedAt: 1 });
     expect((savedItems.playlistSourceVideos as Record<string, string[]>)?.PL123).toBeUndefined();
   });

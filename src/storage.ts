@@ -212,17 +212,11 @@ export async function clearPlaylistRuleAndSourceVideos(
   const nextPlaylistScope = { ...currentStore.playlist };
   delete nextPlaylistScope[playlistId];
 
-  const nextVideoScope = { ...currentStore.video };
-  for (const videoId of playlistSourceVideos[playlistId] ?? []) {
-    delete nextVideoScope[videoId];
-  }
-
   const nextPlaylistSourceVideos = { ...playlistSourceVideos };
   delete nextPlaylistSourceVideos[playlistId];
 
   const nextStore: RuleStore = {
     ...currentStore,
-    video: nextVideoScope,
     playlist: nextPlaylistScope
   };
 

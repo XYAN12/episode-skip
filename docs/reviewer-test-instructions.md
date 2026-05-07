@@ -7,7 +7,6 @@ Skipisode lets users save and automatically re-apply intro and outro skip rules 
 ## Supported Surface
 
 - Standard YouTube watch pages, such as `https://www.youtube.com/watch?v=...`
-- Mobile YouTube watch pages, such as `https://m.youtube.com/watch?v=...`
 
 ## Not The Primary Target
 
@@ -46,7 +45,7 @@ Skipisode lets users save and automatically re-apply intro and outro skip rules 
 
 ## Floating Button Verification
 
-1. Drag the `Skip` button to a different position.
+1. Drag the button to a different position.
 2. Refresh the page.
 3. Confirm the button position persists.
 

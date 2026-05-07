@@ -66,10 +66,10 @@ Users can control extension data by:
 
 Skipisode is intended to work on supported standard YouTube watch pages. It does not claim to support every YouTube surface.
 
-## Changes To This Policy
-
-This policy may be updated when the extension's functionality, storage behavior, or data practices change. The published policy should always reflect the current released behavior.
 
 ## Contact
 
-For support or privacy questions, use the support contact information published in the Chrome Web Store listing for Skipisode.
+For support or privacy questions, use the contact information below.
+
+___
+skipisode@outlook.com

@@ -98,6 +98,18 @@ export function getFeedbackView(message: string, tone: PanelFeedbackTone): Panel
   };
 }
 
+export function getActivePanelView(view: PanelView, state: PageState): PanelView {
+  if (view.kind === "playlist-confirm") {
+    return buildPanelViewModel(state).canApplyPlaylist ? view : { kind: "main" };
+  }
+
+  if (view.kind === "clear-confirm") {
+    return doesPlaylistContributeToDisplay(state) ? view : { kind: "main" };
+  }
+
+  return view;
+}
+
 export function getPanelViewAfterPlaylistDismiss(): PanelView {
   return { kind: "main" };
 }

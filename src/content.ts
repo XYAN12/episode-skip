@@ -15,6 +15,7 @@ import {
 import {
   buildPanelViewModel,
   getFeedbackView,
+  getActivePanelView,
   getPanelViewBeforeClear,
   getPanelViewAfterPlaylistApply,
   getPanelViewAfterPlaylistDismiss,
@@ -689,8 +690,13 @@ function showFeedback(message: string, tone: "success" | "error" | "info"): void
 }
 
 async function handleConfirmPrimaryAction(): Promise<void> {
-  if (panelView.kind === "clear-confirm") {
+  const activeView = currentState ? getActivePanelView(panelView, currentState) : panelView;
+  if (activeView.kind === "clear-confirm") {
     await clearCurrentPlaylistRule();
+    return;
+  }
+
+  if (activeView.kind !== "playlist-confirm") {
     return;
   }
 
@@ -698,8 +704,13 @@ async function handleConfirmPrimaryAction(): Promise<void> {
 }
 
 async function handleConfirmSecondaryAction(): Promise<void> {
-  if (panelView.kind === "clear-confirm") {
+  const activeView = currentState ? getActivePanelView(panelView, currentState) : panelView;
+  if (activeView.kind === "clear-confirm") {
     await clearCurrentEpisodeOnlyRule();
+    return;
+  }
+
+  if (activeView.kind !== "playlist-confirm") {
     return;
   }
 
@@ -804,12 +815,7 @@ function renderUi(): void {
   applyLocalizedCopy();
 
   const viewModel = buildPanelViewModel(currentState);
-  const activeView =
-    (panelView.kind === "playlist-confirm" && viewModel.canApplyPlaylist) || panelView.kind === "clear-confirm"
-      ? panelView
-      : panelView.kind === "playlist-confirm"
-        ? { kind: "main" as const }
-        : panelView;
+  const activeView = getActivePanelView(panelView, currentState);
 
   uiElements.videoTitle.textContent = viewModel.videoTitle;
   uiElements.introValue.textContent = viewModel.introValue;

@@ -43,23 +43,27 @@ export function resolveRuleWithSource(store: RuleStore, context: RuleContext): {
   rule: SkipRule | null;
   source: RuleSource;
 } {
-  if (context.videoId && store.video[context.videoId]) {
+  const videoRule = context.videoId ? store.video[context.videoId] ?? null : null;
+  const playlistRule = context.playlistId ? store.playlist[context.playlistId] ?? null : null;
+  const channelRule = context.channelId ? store.channel[context.channelId] ?? null : null;
+
+  if (videoRule) {
     return {
-      rule: store.video[context.videoId],
+      rule: mergeRules(channelRule, playlistRule, videoRule),
       source: "video"
     };
   }
 
-  if (context.playlistId && store.playlist[context.playlistId]) {
+  if (playlistRule) {
     return {
-      rule: store.playlist[context.playlistId],
+      rule: mergeRules(channelRule, playlistRule),
       source: "playlist"
     };
   }
 
-  if (context.channelId && store.channel[context.channelId]) {
+  if (channelRule) {
     return {
-      rule: store.channel[context.channelId],
+      rule: channelRule,
       source: "channel"
     };
   }
@@ -68,6 +72,21 @@ export function resolveRuleWithSource(store: RuleStore, context: RuleContext): {
     rule: null,
     source: "none"
   };
+}
+
+function mergeRules(...rules: Array<SkipRule | null>): SkipRule | null {
+  const presentRules = rules.filter((rule): rule is SkipRule => rule !== null);
+  if (presentRules.length === 0) {
+    return null;
+  }
+
+  return presentRules.reduce<SkipRule>(
+    (mergedRule, rule) => ({
+      ...mergedRule,
+      ...rule
+    }),
+    { updatedAt: presentRules[0].updatedAt }
+  );
 }
 
 export function createRuleFromIntro(currentTime: number, updatedAt = Date.now()): SkipRule {

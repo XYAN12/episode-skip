@@ -25,10 +25,38 @@ describe("rule priority", () => {
     );
   });
 
+  it("keeps a video's own fields while inheriting missing fields from the playlist rule", () => {
+    const mixedStore: RuleStore = {
+      video: { abc123: { introEndSeconds: 90, updatedAt: 3 } },
+      playlist: { PL123: { outroRemainingSeconds: 100, updatedAt: 2 } },
+      channel: {}
+    };
+
+    expect(resolveRule(mixedStore, { videoId: "abc123", playlistId: "PL123", channelId: null })).toEqual({
+      introEndSeconds: 90,
+      outroRemainingSeconds: 100,
+      updatedAt: 3
+    });
+  });
+
   it("prefers playlist over channel when no video rule exists", () => {
     expect(resolveRule(store, { videoId: "missing", playlistId: "PL123", channelId: "UC123" })).toEqual(
       playlistRule
     );
+  });
+
+  it("keeps a playlist's own fields while inheriting missing fields from the channel rule", () => {
+    const mixedStore: RuleStore = {
+      video: {},
+      playlist: { PL123: { outroRemainingSeconds: 100, updatedAt: 2 } },
+      channel: { UC123: { introEndSeconds: 30, updatedAt: 1 } }
+    };
+
+    expect(resolveRule(mixedStore, { videoId: null, playlistId: "PL123", channelId: "UC123" })).toEqual({
+      introEndSeconds: 30,
+      outroRemainingSeconds: 100,
+      updatedAt: 2
+    });
   });
 
   it("uses the channel rule when no video or playlist rule exists", () => {

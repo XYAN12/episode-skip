@@ -5,6 +5,7 @@ import {
   formatIntroSavedMessage,
   formatOutroSavedMessage,
   formatPlaylistSavedMessage,
+  getActivePanelView,
   getPanelViewAfterPlaylistApply,
   getPanelViewAfterPlaylistDismiss,
   getPanelViewBeforeClear,
@@ -150,6 +151,52 @@ describe("in-page UI state", () => {
       message: "Playlist rules saved.",
       tone: "success"
     });
+  });
+
+  it("drops a stale clear confirm after the playlist contribution is gone", () => {
+    expect(
+      getActivePanelView(
+        { kind: "clear-confirm" },
+        {
+          isWatchPage: true,
+          title: "Episode",
+          currentTime: 95,
+          duration: 1200,
+          videoId: "abc123",
+          playlistId: "PL123",
+          playlistIndex: "2",
+          channelId: "UC123",
+          activeRuleSource: "video",
+          activeRule: { introEndSeconds: 95, updatedAt: 1 },
+          videoRule: { introEndSeconds: 95, updatedAt: 1 },
+          playlistRule: null,
+          channelRule: null
+        }
+      )
+    ).toEqual({ kind: "main" });
+  });
+
+  it("keeps playlist confirm active when the current video rule can still be applied", () => {
+    expect(
+      getActivePanelView(
+        { kind: "playlist-confirm", reason: "intro-saved" },
+        {
+          isWatchPage: true,
+          title: "Episode",
+          currentTime: 95,
+          duration: 1200,
+          videoId: "abc123",
+          playlistId: "PL123",
+          playlistIndex: "2",
+          channelId: "UC123",
+          activeRuleSource: "video",
+          activeRule: { introEndSeconds: 95, updatedAt: 1 },
+          videoRule: { introEndSeconds: 95, updatedAt: 1 },
+          playlistRule: null,
+          channelRule: null
+        }
+      )
+    ).toEqual({ kind: "playlist-confirm", reason: "intro-saved" });
   });
 
   it("enters clear confirm when clearing a playlist-backed rule", () => {

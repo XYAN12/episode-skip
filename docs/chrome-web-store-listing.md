@@ -19,25 +19,22 @@ With Skipisode, you can save an intro end point from the current playback positi
 - Auto-skip saved intros and outros on supported YouTube watch pages
 - Use per-video rules when you want precise control
 - Apply a saved video rule to the current playlist with one click
-- Reuse rules across video, playlist, and channel scopes
-- Keep the floating `Skip` button draggable and persistent across page reloads
-- Store extension data locally in the browser with `chrome.storage.local`
 
 ### How It Works
 
 1. Open a supported YouTube watch page.
-2. Click the floating `Skip` button.
-3. When the intro ends, click `Set intro end`.
-4. When the outro or credits start, click `Set outro start`.
+2. Click the floating button.
+3. When the intro ends, click `Set` in the intro card.
+4. When the outro or credits start, click `Set` in the outro card.
 5. On later matching videos, Skipisode automatically skips those saved sections.
 
 If the current watch page belongs to a playlist, you can also apply the current video rule to the playlist from the in-page flow.
 
 ### Good Fit For
 
+- Intros begin at the start of each episode, and outros end with the episode.
 - TV episodes uploaded to YouTube
 - Repeat-viewing playlists
-- Serialized or episodic content with stable intros and outros
 
 ### Notes
 
